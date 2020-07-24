@@ -9,19 +9,21 @@ import logging
 import pytz
 from datetime import datetime,timedelta
 
-aoP2780dict = {
+aoDictP2780 = {
     "(a)": "A",
     "(b)": "B",
     "(c)": "C",
     "(d)": "D"
 }
 
-aoP2945dict = {
+aoDictP2945 = {
     "(a)": "0030",
     "(b)": "1640",
     "(c)": "1713",
     "(d)": "2043",
-    "(e)": "2317"
+    "(e)": "2317",
+    "(b)+(c)": "1640/1713",
+    "(e)+(a)": "2317/0030"
 }    
 
 class Sched:
@@ -29,7 +31,8 @@ class Sched:
 
     This class contains a schedule of Arecibo Observatory
     sessions, as well as several useful methods for manipulating
-    and accessing related scheduling information.  
+    and accessing related scheduling information. For now, this
+    class is project-specific (e.g. P2780/P2945).  
 
     Contents of schedule are stored in an `astropy.table.Table`.
 
@@ -47,8 +50,8 @@ class Sched:
     ):
 
         # UTC/AO tzinfo
-        #utc = pytz.utc
-        #ao_tz = pytz.timezone("America/Puerto_Rico")
+        utc = pytz.utc
+        ao_tz = pytz.timezone("America/Puerto_Rico")
         #self.block_start_aot = ao_tz.localize(datetime.strptime(datestr,'%b_%d_%y'))
         #self.block_start_utc = self.block_start_aot.astimezone(utc)
 
@@ -57,23 +60,29 @@ class Sched:
 
         self.ProjID = self.Table['Proj'][0]
 
+    """
     def compose(self):
         self.projid = self.sess_table['proj'][0]
         if self.projid == 'P2780':
             self.fix_p2780_sess()
         self.obs_times_arecibo()
         self.get_wiki_lines()        
+    """
 
-    def fix_p2780_sess(self):
+    def TranslateSess(self):
+        """
+        Translates self.Table['Sess'] to descriptive session identifiers
+        according to aoDictP2780 and aoDictP2945.
+        """
 
-        if not self.sessions_fixed:
-            for i,id in enumerate(self.sess_table['sess']):
-                fixed = id.upper().replace('(','').replace(')','')
-                self.sess_table['sess'][i] = fixed
-            self.sessions_fixed = True
+        if '2780' in self.ProjID:
+            self.SessID = np.array([aoDictP2780[ss] for ss in self.Table['Sess']])            
+        elif '2945' in self.ProjID:
+            self.SessID = np.array([aoDictP2945[ss] for ss in self.Table['Sess']])
         else:
             pass
 
+    """
     def obs_times_arecibo(self):
         self.arecibo_start_times = [self.block_start_aot + 
             timedelta(days=1.0*c,minutes=15.0*r)
@@ -81,6 +90,7 @@ class Sched:
         self.arecibo_end_times = [self.block_start_aot + 
             timedelta(days=1.0*c,minutes=15.0*r)
             for c,r in zip(self.sess_table['endcol'],self.sess_table['endrow'])]
+    """    
 
     # Look for consecutive sessions with the same id and merge them
     def merge_sessions(self):
@@ -93,7 +103,7 @@ class Sched:
     2020 Jul 12: 04:30 - 06:30: P2945 (2317,0030): <br> 
     2020 Jul 12: 02:00 - 03:00: P2945 (2043): <br> 
     2020 Jul 11: 08:45 - 15:30: P2780 (Session D): <br> 
-    """
+    
     def get_wiki_lines(self):
         self.wiki_lines = []
         for r,(ast,aet) in enumerate(zip(self.arecibo_start_times,
@@ -115,7 +125,7 @@ class Sched:
     def print_wiki_lines(self):
         for wl in self.wiki_lines:
             print(wl)
-
+    """
 
 def fix_colnames(table):
     table.rename_column('col1','DateStr')
@@ -154,8 +164,9 @@ def scrape_ao_sched(project,year,log_level=logging.INFO):
         ]
 
     fix_colnames(sched_table)
+    so = Sched(sched_table)
 
-    return sched_table
+    return so
 
 
 if __name__ == "__main__":

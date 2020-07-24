@@ -49,25 +49,14 @@ class Sched:
         table
     ):
 
-        # UTC/AO tzinfo
-        utc = pytz.utc
-        ao_tz = pytz.timezone("America/Puerto_Rico")
-        #self.block_start_aot = ao_tz.localize(datetime.strptime(datestr,'%b_%d_%y'))
-        #self.block_start_utc = self.block_start_aot.astimezone(utc)
-
         self.Table = table
         self.nRows = len(self.Table)
 
         self.ProjID = self.Table['Proj'][0]
+        self.TranslateSess()
+        self.ObsTimesTZ()
+        self.GetWikiLines()
 
-    """
-    def compose(self):
-        self.projid = self.sess_table['proj'][0]
-        if self.projid == 'P2780':
-            self.fix_p2780_sess()
-        self.obs_times_arecibo()
-        self.get_wiki_lines()        
-    """
 
     def TranslateSess(self):
         """
@@ -82,15 +71,28 @@ class Sched:
         else:
             pass
 
-    """
-    def obs_times_arecibo(self):
-        self.arecibo_start_times = [self.block_start_aot + 
-            timedelta(days=1.0*c,minutes=15.0*r)
-            for c,r in zip(self.sess_table['begcol'],self.sess_table['begrow'])]  
-        self.arecibo_end_times = [self.block_start_aot + 
-            timedelta(days=1.0*c,minutes=15.0*r)
-            for c,r in zip(self.sess_table['endcol'],self.sess_table['endrow'])]
-    """    
+    def ObsTimesTZ(self):
+        """
+        Calculate session start/end times by timezone, UTC and APR (America/Puerto Rico)
+        """
+
+        APR = pytz.timezone("America/Puerto_Rico")
+        UTC = pytz.utc
+
+        BlockDates = np.array(
+            [APR.localize(datetime.strptime(ds,'%b_%d_%y')) for ds in self.Table['DateStr']]
+        )
+        self.StartAPR = np.array(
+            [bd + timedelta(days=1.0*c,minutes=15.0*r)
+            for bd,c,r in zip(BlockDates,self.Table['BegCol'],self.Table['BegRow'])]
+        ) 
+        self.EndAPR = np.array(
+            [bd + timedelta(days=1.0*c,minutes=15.0*r)
+            for bd,c,r in zip(BlockDates,self.Table['EndCol'],self.Table['EndRow'])]
+        )
+
+        self.StartUTC = np.array([sa.astimezone(UTC) for sa in self.StartAPR])
+        self.EndUTC = np.array([ea.astimezone(UTC) for ea in self.EndAPR])
 
     # Look for consecutive sessions with the same id and merge them
     def merge_sessions(self):
@@ -103,29 +105,27 @@ class Sched:
     2020 Jul 12: 04:30 - 06:30: P2945 (2317,0030): <br> 
     2020 Jul 12: 02:00 - 03:00: P2945 (2043): <br> 
     2020 Jul 11: 08:45 - 15:30: P2780 (Session D): <br> 
-    
-    def get_wiki_lines(self):
-        self.wiki_lines = []
-        for r,(ast,aet) in enumerate(zip(self.arecibo_start_times,
-                             self.arecibo_end_times)):
-            wiki_start = datetime.strftime(ast,'%Y %b %d: %H:%M')
+    """    
+    def GetWikiLines(self):
+        self.WikiLines = []
+        for r,(ast,aet) in enumerate(zip(self.StartAPR,self.EndAPR)):
+            WikiStart = datetime.strftime(ast,'%Y %b %d: %H:%M')
 
             # Check for session spanning multiple columns (days)
-            if self.sess_table['begcol'][r] == self.sess_table['endcol'][r]:
-                wiki_end = datetime.strftime(aet,'%H:%M')
+            if self.Table['BegCol'][r] == self.Table['EndCol'][r]:
+                WikiEnd = datetime.strftime(aet,'%H:%M')
             else:
-                wiki_end = datetime.strftime(aet,'%b %d: %H:%M')
+                WikiEnd = datetime.strftime(aet,'%b %d: %H:%M')
 
-            wiki_line = '%s - %s: %s (Session %s): <br>' % (
-                wiki_start,wiki_end,self.sess_table['proj'][r],
-                self.sess_table['sess'][r]
-                )
-            self.wiki_lines.append(wiki_line)
+            WikiLine = '%s - %s: %s (Session %s): <br>' % (
+                WikiStart,WikiEnd,self.ProjID,self.SessID[r]
+            )
+            self.WikiLines.append(WikiLine)
 
-    def print_wiki_lines(self):
-        for wl in self.wiki_lines:
+    def PrintWikiLines(self):
+        for wl in self.WikiLines:
             print(wl)
-    """
+
 
 def fix_colnames(table):
     table.rename_column('col1','DateStr')

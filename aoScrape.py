@@ -9,40 +9,55 @@ import logging
 import pytz
 from datetime import datetime,timedelta
 
+aoP2780dict = {
+    "(a)": "A",
+    "(b)": "B",
+    "(c)": "C",
+    "(d)": "D"
+}
 
-class obs_block:
+aoP2945dict = {
+    "(a)": "0030",
+    "(b)": "1640",
+    "(c)": "1713",
+    "(d)": "2043",
+    "(e)": "2317"
+}    
+
+class Sched:
     """AO Schedule class
 
-    This is a class for representing ~15-day blocks of time on
-    the Arecibo Observatory schedule and contains corresponding
-    project-specific sessions falling into those blocks of time.
+    This class contains a schedule of Arecibo Observatory
+    sessions, as well as several useful methods for manipulating
+    and accessing related scheduling information.  
 
     Contents of schedule are stored in an `astropy.table.Table`.
 
     Parameters
     ----------
-    datestr: str
-        Date string of the form 'Mar_11_20' marking the start of
-        a 15-day observation block.
+    table: astropy.table.Table
+        Pertinent information for all the AO observations is stored
+        here. More info coming soon...
+    other?
     """
 
     def __init__(
         self,
-        datestr
+        table
     ):
 
         # UTC/AO tzinfo
-        utc = pytz.utc
-        ao_tz = pytz.timezone("America/Puerto_Rico")
-        self.block_start_aot = ao_tz.localize(datetime.strptime(datestr,'%b_%d_%y'))
-        self.block_start_utc = self.block_start_aot.astimezone(utc)
+        #utc = pytz.utc
+        #ao_tz = pytz.timezone("America/Puerto_Rico")
+        #self.block_start_aot = ao_tz.localize(datetime.strptime(datestr,'%b_%d_%y'))
+        #self.block_start_utc = self.block_start_aot.astimezone(utc)
 
-        # Contain scheduled sessions in astropy table
-        self.sess_table = Table()
-        self.sessions_fixed = False
+        self.Table = table
+        self.nRows = len(self.Table)
+
+        self.ProjID = self.Table['Proj'][0]
 
     def compose(self):
-        fix_colnames(self.sess_table)
         self.projid = self.sess_table['proj'][0]
         if self.projid == 'P2780':
             self.fix_p2780_sess()

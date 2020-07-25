@@ -11,7 +11,7 @@ import pytz
 from datetime import datetime, timedelta
 import argparse
 
-aoDictP2780 = {"(a)": "A", "(b)": "B", "(c)": "C", "(d)": "D"}
+aoDictP2780 = {"(a)": "Session A", "(b)": "Session B", "(c)": "Session C", "(d)": "Session D"}
 
 aoDictP2945 = {
     "(a)": "0030",
@@ -19,8 +19,8 @@ aoDictP2945 = {
     "(c)": "1713",
     "(d)": "2043",
     "(e)": "2317",
-    "(b)+(c)": "1640/1713",
-    "(e)+(a)": "2317/0030",
+    "(b)+(c)": "1640,1713",
+    "(e)+(a)": "2317,0030",
 }
 
 
@@ -123,7 +123,7 @@ class Sched:
             else:
                 WikiEnd = datetime.strftime(aet, "%b %d: %H:%M")
 
-            WikiLine = "%s - %s: %s (Session %s): <br>" % (
+            WikiLine = "%s - %s: %s (%s): <br>" % (
                 WikiStart,
                 WikiEnd,
                 self.ProjID,

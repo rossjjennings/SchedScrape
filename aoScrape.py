@@ -63,7 +63,12 @@ class Sched:
         elif "2945" in self.ProjID:
             self.SessID = np.array([aoDictP2945[ss] for ss in self.Table["Sess"]])
         else:
-            pass
+            try:
+                self.SessID = np.array([aoDictP2780[ss] for ss in self.Table["Sess"]])
+            except KeyError:
+                print('Could not match session key, %s.' % (ss))
+            except:
+                print('Something else happened.') 
 
     def ObsTimesTZ(self):
         """

@@ -197,7 +197,12 @@ def main():
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     parser.add_argument(
-        "project", type=str, nargs="+", default=None, help="Project code, e.g. P2780",
+        "--projects",
+        "-p",
+        type=str,
+        #choices=['P2780','P2945','P3436'],
+        nargs="+",
+        help="Project code(s), e.g. P2780,P2945",
     )
     parser.add_argument(
         "--year",
@@ -209,7 +214,9 @@ def main():
     )
 
     args = parser.parse_args()
-    for p in args.project:
+    projects = [str(item) for item in args.projects[0].split(',')]
+
+    for p in projects:
         x = ScrapeSchedAO(p, args.year)
         x.PrintWikiLines()
 

@@ -205,7 +205,7 @@ def ScrapeSchedAO(project, year):
 def main():
 
     parser = argparse.ArgumentParser(
-        description="Arecibo Schedule Scraper",
+        description="GBO/AO Schedule Scraper",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     parser.add_argument(

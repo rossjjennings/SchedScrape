@@ -4,18 +4,19 @@
 No setup.py (yet), so I made an executable with `chmod +x aoScrape.py`. Then,
 
 ```
-./aoScrape.py -h
-usage: aoScrape.py [-h] [--year [YEAR]] project [project ...]
+./SchedScrape.py -h
+usage: SchedScrape.py [-h] [--projects PROJECTS [PROJECTS ...]]
+                      [--year [YEAR]] [--future]
 
-Arecibo Schedule Scraper
-
-positional arguments:
-  project               Project code, e.g. P2780
+GBO/AO Schedule Scraper
 
 optional arguments:
   -h, --help            show this help message and exit
+  --projects PROJECTS [PROJECTS ...], -p PROJECTS [PROJECTS ...]
+                        Project code(s) (default: None)
   --year [YEAR], -y [YEAR]
                         Year (default: 2020)
+  --future, -f          Print future sessions only. (default: False)
 ```
 
 ```
@@ -38,7 +39,7 @@ Does other stuff too.
 
 ### Dependencies
 
-Before you can use SensitivityMap, make sure you have access to:
+Before you can use SchedScrape, make sure you have access to:
 
 ```
 astropy

@@ -141,52 +141,6 @@ class Sched:
             print(wl)
 
 
-def FixColnames(table):
-    table.rename_column("col1", "DateStr")
-    table.rename_column("col2", "Proj")
-    table.rename_column("col6", "Sess")
-    table.rename_column("col9", "StartLST")
-    table.rename_column("col10", "EndLST")
-    table.rename_column("col12", "TimeSys")
-    table.rename_column("col13", "BegCol")
-    table.rename_column("col14", "EndCol")
-    table.rename_column("col15", "BegRow")
-    table.rename_column("col16", "EndRow")
-    table.rename_column("col17", "Hours")
-
-def aoStartEnd(table):
-    """
-    Appropriately parse AO table to get start/end local (AO) times.
-    """
-
-    AO = pytz.timezone("America/Puerto_Rico")
-
-    BlockDates = np.array(
-        [
-            AO.localize(datetime.strptime(ds, "%b_%d_%y"))
-            for ds in table["DateStr"]
-        ]
-    )
-    StartAO = np.array(
-        [
-            bd + timedelta(days=1.0 * c, minutes=15.0 * r)
-            for bd, c, r in zip(
-                BlockDates, table["BegCol"], table["BegRow"]
-            )
-        ]
-    )
-    EndAO = np.array(
-        [
-            bd + timedelta(days=1.0 * c, minutes=15.0 * r)
-            for bd, c, r in zip(
-                BlockDates, table["EndCol"], table["EndRow"]
-            )
-        ]
-    )
-
-    return StartAO, EndAO
-
-
 def ScrapeSchedAO(project, year):
 
     proj = project.lower()
@@ -216,10 +170,55 @@ def ScrapeSchedAO(project, year):
         "col17",
     ]
 
-    FixColnames(SchedTable)
-    Start,End = aoStartEnd(SchedTable)
+    # Fix SchedTable column names (more descriptive)
+    SchedTable.rename_column("col1", "DateStr")
+    SchedTable.rename_column("col2", "Proj")
+    SchedTable.rename_column("col6", "Sess")
+    SchedTable.rename_column("col9", "StartLST")
+    SchedTable.rename_column("col10", "EndLST")
+    SchedTable.rename_column("col12", "TimeSys")
+    SchedTable.rename_column("col13", "BegCol")
+    SchedTable.rename_column("col14", "EndCol")
+    SchedTable.rename_column("col15", "BegRow")
+    SchedTable.rename_column("col16", "EndRow")
+    SchedTable.rename_column("col17", "Hours")
 
-    print(Start)
+    # Calculate local AO start/end times from SchedTable
+    AO = pytz.timezone("America/Puerto_Rico")
+
+    BlockDates = np.array(
+        [
+            AO.localize(datetime.strptime(ds, "%b_%d_%y"))
+            for ds in SchedTable["DateStr"]
+        ]
+    )
+    StartAO = np.array(
+        [
+            bd + timedelta(days=1.0 * c, minutes=15.0 * r)
+            for bd, c, r in zip(
+                BlockDates, SchedTable["BegCol"], SchedTable["BegRow"]
+            )
+        ]
+    )
+    EndAO = np.array(
+        [
+            bd + timedelta(days=1.0 * c, minutes=15.0 * r)
+            for bd, c, r in zip(
+                BlockDates, SchedTable["EndCol"], SchedTable["EndRow"]
+            )
+        ]
+    )
+
+    # Clean up the table to remove extraneous info, add datetimes
+    SchedTable.remove_columns([
+        'DateStr','StartLST','EndLST','TimeSys',
+        'BegCol','EndCol','BegRow','EndRow','Hours'
+    ])
+
+    SchedTable['StartLocal'] = StartAO
+    SchedTable['EndLocal'] = EndAO
+
+    print(SchedTable)
     #so = Sched(SchedTable)
     #return so
 

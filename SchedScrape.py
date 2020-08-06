@@ -5,7 +5,7 @@ import sys
 import numpy as np
 import requests
 from bs4 import BeautifulSoup
-from astropy.table import Table
+from astropy.table import vstack, Table
 from astropy.io import ascii
 import pytz
 from datetime import datetime, timedelta
@@ -212,9 +212,8 @@ def main():
         "--projects",
         "-p",
         type=str,
-        #choices=['P2780','P2945','P3436'],
         nargs="+",
-        help="Project code(s), e.g. P2780,P2945",
+        help="Project code(s)",
     )
     parser.add_argument(
         "--year",
@@ -224,6 +223,12 @@ def main():
         default=datetime.now(pytz.utc).strftime("%Y"),
         help="Year",
     )
+    parser.add_argument(
+        "--future",
+        "-f",
+        action="store_true",
+        help="Print future sessions only."
+    )
 
     args = parser.parse_args()
     projects = [str(item) for item in args.projects[0].split(',')]
@@ -232,9 +237,8 @@ def main():
     for p in projects:
         SchedTables.append(ScrapeSchedAO(p, args.year))
 
-    # vstack SchedTables into one table & go from there.
-    x = Sched(SchedTables[0])
-    print(x.StartUTC)
+    FullSched = vstack(SchedTables)
+    x = Sched(FullSched)
 
 if __name__ == "__main__":
     main()

@@ -7,6 +7,7 @@ import requests
 from bs4 import BeautifulSoup
 from astropy.table import vstack, Table
 from astropy.io import ascii
+from astropy.time import Time
 import pytz
 from datetime import datetime, timedelta
 import argparse
@@ -37,22 +38,59 @@ class Sched:
     Parameters
     ----------
     table: astropy.table.Table
-        Pertinent scheduling informaation; assumed columns are Proj (project ID; e.g. 
-    P2780), Sess (raw session ID; e.g. (a)), StartLocal (observatory's local start 
-    time), and EndLocal (local end time).
+        Pertinent scheduling information; assumed columns are...
+            SortTag (YYYYMMDDHHMM start time integers for easy sorting),
+            Proj (project ID; e.g. P2780), 
+            Sess (raw session ID; e.g. (a)),
+            StartLocal (observatory's local start time),
+            EndLocal (local end time),
+            DayWrap (boolean marker for sessions that cross a day boundary).
     """
 
     def __init__(self, table):
 
         self.nRows = len(table)
+        self.Tags = table["SortTag"]
         self.ProjID = table["Proj"]
         self.RawSessID = table["Sess"]
         self.StartLoc = table["StartLocal"]
         self.EndLoc = table["EndLocal"]
+        self.Wraps = table["DayWrap"]
+        self.SessID = None
+        self.StartUTC = None
+        self.EndUTC = None
+        self.WikiLines = None
 
         self.TranslateSess()
         self.ObsTimesUTC()
-        #self.GetWikiLines()
+        self.GetWikiLines()
+        self.SortArrays()
+
+    def SortArrays(self):
+        """
+        By default sort by Tags. Maybe add more functionality later.
+        THERE MUST BE A BETTER WAY TO DO THIS OMG.
+        """
+
+        SortInds = np.argsort(self.Tags)
+
+        self.Tags = self.Tags[SortInds]
+        self.ProjID = self.ProjID[SortInds]
+        self.RawSessID = self.RawSessID[SortInds]
+        self.StartLoc = self.StartLoc[SortInds]
+        self.EndLoc = self.EndLoc[SortInds]
+        self.Wraps = self.Wraps[SortInds]
+        self.SessID = np.array(self.SessID)[SortInds]
+        self.StartUTC = self.StartUTC[SortInds]
+        self.EndUTC = self.EndUTC[SortInds]
+        self.WikiLines = np.array(self.WikiLines)[SortInds]
+
+    # Not sure this is necessary...
+    def GetObservatories(self):
+        """
+        Use project codes to determine corresponding observatory.
+        """
+        pass
 
     def TranslateSess(self):
         """
@@ -85,41 +123,52 @@ class Sched:
         self.StartUTC = np.array([sl.astimezone(UTC) for sl in self.StartLoc])
         self.EndUTC = np.array([el.astimezone(UTC) for el in self.EndLoc])
 
-    # Look for consecutive sessions with the same id and merge them
-    def merge_sessions(self):
-        pass
-
-    # Print lines that can be copied directly to the wiki schedule
-    # Maybe it should be a separate function if I'm going to intersperse P2780/P2945
-    """For example:
-    2020 Jul 12: 21:15 - Jul 13: 06:30: P2780 (Session C): <br> 
-    2020 Jul 12: 04:30 - 06:30: P2945 (2317,0030): <br> 
-    2020 Jul 12: 02:00 - 03:00: P2945 (2043): <br> 
-    2020 Jul 11: 08:45 - 15:30: P2780 (Session D): <br> 
-    """
-
     def GetWikiLines(self):
+        """For example:
+        2020 Jul 12: 21:15 - Jul 13: 06:30: P2780 (Session C): <br>
+        2020 Jul 12: 04:30 - 06:30: P2945 (2317,0030): <br>
+        2020 Jul 12: 02:00 - 03:00: P2945 (2043): <br>
+        2020 Jul 11: 08:45 - 15:30: P2780 (Session D): <br>
+        """
+
         self.WikiLines = []
-        for r, (ast, aet) in enumerate(zip(self.StartAPR, self.EndAPR)):
-            WikiStart = datetime.strftime(ast, "%Y %b %d: %H:%M")
+        for r, (st, et) in enumerate(zip(self.StartLoc, self.EndLoc)):
+            WikiStart = datetime.strftime(st, "%Y %b %d: %H:%M")
 
             # Check for session spanning multiple columns (days)
-            if self.Table["BegCol"][r] == self.Table["EndCol"][r]:
-                WikiEnd = datetime.strftime(aet, "%H:%M")
+            # if datetime.strftime(st,'%d') == datetime.strftime(et,'%d'):
+            if not self.Wraps[r]:
+                WikiEnd = datetime.strftime(et, "%H:%M")
             else:
-                WikiEnd = datetime.strftime(aet, "%b %d: %H:%M")
+                WikiEnd = datetime.strftime(et, "%b %d: %H:%M")
 
             WikiLine = "%s - %s: %s (%s): <br>" % (
                 WikiStart,
                 WikiEnd,
-                self.ProjID,
+                self.ProjID[r],
                 self.SessID[r],
             )
             self.WikiLines.append(WikiLine)
 
-    def PrintWikiLines(self):
-        for wl in self.WikiLines:
-            print(wl)
+    def PrintWikiLines(self,all=False,reverse=True):
+        """
+        Prints schedule lines to copy directly to the wiki. By default, only future
+        sessions are printed (all=False) with the latest date on top (reverse=True).
+        """
+
+        if not all:
+            # Find UTC start times after Time.now()
+            TimeNow = Time.now() 
+            FutureInds = np.where(self.StartUTC > TimeNow)
+            OutLines = self.WikiLines[FutureInds]
+            
+        else:
+            Outlines = self.WikiLines
+
+        if reverse:
+            [print(wl) for wl in np.flip(OutLines)]
+        else:
+            [print(wl) for wl in OutLines]
 
 
 def ScrapeSchedAO(project, year):
@@ -199,6 +248,37 @@ def ScrapeSchedAO(project, year):
     SchedTable['StartLocal'] = StartAO
     SchedTable['EndLocal'] = EndAO
 
+    SortTag = np.array([int(datetime.strftime(st,'%Y%m%d%H%M')) for st in StartAO])
+    SchedTable['SortTag'] = SortTag
+
+    # Sort the table by SortTag, then remove this column 
+    SchedTable.sort(keys=['SortTag'])
+
+    SchedTable['DayWrap'] = np.zeros(len(SchedTable))
+    RemoveRows = []
+    for r in range(len(SchedTable)-1):
+        
+        # Merge sessions continuing over a day boundary
+        if (
+            (SchedTable['EndLocal'][r] == SchedTable['StartLocal'][r+1]) and
+            (SchedTable['Sess'][r] == SchedTable['Sess'][r+1])
+        ):
+            SchedTable['EndLocal'][r] = SchedTable['EndLocal'][r+1]
+            SchedTable['DayWrap'][r] = 1
+            RemoveRows.append(r+1)
+        
+        # Merge adjacent P2945 sessions
+        elif (
+            (SchedTable['EndLocal'][r] == SchedTable['StartLocal'][r+1]) and
+            (SchedTable['Proj'][r] == SchedTable['Proj'][r+1] == 'P2945')
+        ):
+            pass
+
+        else:
+            pass
+
+    SchedTable.remove_rows(RemoveRows)
+
     return SchedTable
 
 
@@ -229,6 +309,12 @@ def main():
         action="store_true",
         help="Print future sessions only."
     )
+    parser.add_argument(
+        "--reverse",
+        "-r",
+        action="store_true",
+        help="Print sessions in reverse order."
+    )
 
     args = parser.parse_args()
     projects = [str(item) for item in args.projects[0].split(',')]
@@ -239,6 +325,7 @@ def main():
 
     FullSched = vstack(SchedTables)
     x = Sched(FullSched)
+    x.PrintWikiLines()
 
 if __name__ == "__main__":
     main()

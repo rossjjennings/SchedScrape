@@ -25,84 +25,65 @@ aoDictP2945 = {
 
 
 class Sched:
-    """AO Schedule class
+    """Observatory schedule class
 
-    This class contains a schedule of Arecibo Observatory
-    sessions, as well as several useful methods for manipulating
-    and accessing related scheduling information. For now, this
-    class is project-specific (e.g. P2780/P2945).  
+    This class contains pertinent observatory schedule info,
+    such as project/session IDs, start/end times, as well as
+    useful methods for manipulating this info. For now, this
+    class is AO project-specific (e.g. P2780/P2945).  
 
-    Contents of schedule are stored in an `astropy.table.Table`.
+    Contents of schedule are stored in various arrays/lists.
 
     Parameters
     ----------
     table: astropy.table.Table
-        Pertinent information for all the AO observations is stored
-        here. More info coming soon...
-    other?
+        Pertinent scheduling informaation; assumed columns are Proj (project ID; e.g. 
+    P2780), Sess (raw session ID; e.g. (a)), StartLocal (observatory's local start 
+    time), and EndLocal (local end time).
     """
 
     def __init__(self, table):
 
-        self.Table = table
-        self.nRows = len(self.Table)
+        self.nRows = len(table)
+        self.ProjID = table["Proj"]
+        self.RawSessID = table["Sess"]
+        self.StartLoc = table["StartLocal"]
+        self.EndLoc = table["EndLocal"]
 
-        self.ProjID = self.Table["Proj"][0]
         self.TranslateSess()
-        self.ObsTimesTZ()
-        self.GetWikiLines()
+        self.ObsTimesUTC()
+        #self.GetWikiLines()
 
     def TranslateSess(self):
         """
-        Translates self.Table['Sess'] to descriptive session identifiers
-        according to aoDictP2780 and aoDictP2945.
+        Converts raw session IDs (observatory convention) to NANOGrav session IDs 
+        (e.g. (a) -> A) using project-specific dictionaries.
         """
 
-        if "2780" in self.ProjID:
-            self.SessID = np.array([aoDictP2780[ss] for ss in self.Table["Sess"]])
-        elif "2945" in self.ProjID:
-            self.SessID = np.array([aoDictP2945[ss] for ss in self.Table["Sess"]])
-        else:
-            try:
-                self.SessID = np.array([aoDictP2780[ss] for ss in self.Table["Sess"]])
-            except KeyError:
-                print('Could not match session key, %s.' % (ss))
-            except:
-                print('Something else happened.') 
+        self.SessID = []
+        for pid,rsid in zip(self.ProjID,self.RawSessID):
+        
+            if "2780" in pid:
+                self.SessID.append(aoDictP2780[rsid])
+            elif "2945" in pid:
+                self.SessID.append(aoDictP2945[rsid])
+            else:
+                try:
+                    self.SessID.append(aoDictP2780[rsid])
+                except KeyError:
+                    print('Could not match session key, %s.' % (rsid))
+                except:
+                    print('Something else happened.') 
 
-    def ObsTimesTZ(self):
+    def ObsTimesUTC(self):
         """
-        Calculate session start/end times by timezone, UTC and APR (America/Puerto Rico)
+        Convert session start/end times -> UTC.
         """
 
-        APR = pytz.timezone("America/Puerto_Rico")
         UTC = pytz.utc
 
-        BlockDates = np.array(
-            [
-                APR.localize(datetime.strptime(ds, "%b_%d_%y"))
-                for ds in self.Table["DateStr"]
-            ]
-        )
-        self.StartAPR = np.array(
-            [
-                bd + timedelta(days=1.0 * c, minutes=15.0 * r)
-                for bd, c, r in zip(
-                    BlockDates, self.Table["BegCol"], self.Table["BegRow"]
-                )
-            ]
-        )
-        self.EndAPR = np.array(
-            [
-                bd + timedelta(days=1.0 * c, minutes=15.0 * r)
-                for bd, c, r in zip(
-                    BlockDates, self.Table["EndCol"], self.Table["EndRow"]
-                )
-            ]
-        )
-
-        self.StartUTC = np.array([sa.astimezone(UTC) for sa in self.StartAPR])
-        self.EndUTC = np.array([ea.astimezone(UTC) for ea in self.EndAPR])
+        self.StartUTC = np.array([sl.astimezone(UTC) for sl in self.StartLoc])
+        self.EndUTC = np.array([el.astimezone(UTC) for el in self.EndLoc])
 
     # Look for consecutive sessions with the same id and merge them
     def merge_sessions(self):
@@ -218,9 +199,7 @@ def ScrapeSchedAO(project, year):
     SchedTable['StartLocal'] = StartAO
     SchedTable['EndLocal'] = EndAO
 
-    print(SchedTable)
-    #so = Sched(SchedTable)
-    #return so
+    return SchedTable
 
 
 def main():
@@ -248,11 +227,14 @@ def main():
 
     args = parser.parse_args()
     projects = [str(item) for item in args.projects[0].split(',')]
-
+    
+    SchedTables = []
     for p in projects:
-        x = ScrapeSchedAO(p, args.year)
-        #x.PrintWikiLines()
+        SchedTables.append(ScrapeSchedAO(p, args.year))
 
+    # vstack SchedTables into one table & go from there.
+    x = Sched(SchedTables[0])
+    print(x.StartUTC)
 
 if __name__ == "__main__":
     main()

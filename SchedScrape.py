@@ -163,13 +163,20 @@ class Sched:
             OutLines = self.WikiLines[FutureInds]
             
         else:
-            Outlines = self.WikiLines
+            OutLines = self.WikiLines
 
         if reverse:
             [print(wl) for wl in np.flip(OutLines)]
         else:
             [print(wl) for wl in OutLines]
 
+    def PrintHenriLines(self):
+        """
+        Prints schedule lines to copy directly to the wiki. By default, all sessions
+        are printed with the latest date on top (reverse=True).
+        """
+        OutMJD = ["(MJD %.2f)" % (Time(ut).mjd) for ut in np.flip(self.StartUTC)]
+        [print(om) for om in OutMJD]
 
 def ScrapeSchedAO(project, year):
 
@@ -304,16 +311,22 @@ def main():
         help="Year",
     )
     parser.add_argument(
-        "--future",
-        "-f",
+        "--all",
+        "-a",
         action="store_true",
-        help="Print future sessions only."
+        help="Print all sessions in the chosen year."
     )
     parser.add_argument(
         "--reverse",
         "-r",
         action="store_true",
         help="Print sessions in reverse order."
+    )
+    parser.add_argument(
+        "--henriradovan",
+        "-hr",
+        action="store_true",
+        help="Print lines with MJDs."
     )
 
     args = parser.parse_args()
@@ -325,7 +338,17 @@ def main():
 
     FullSched = vstack(SchedTables)
     x = Sched(FullSched)
-    x.PrintWikiLines()
+
+    if args.all:
+        if not args.henriradovan:
+            x.PrintWikiLines(all=True)
+        else:
+            x.PrintHenriLines()
+    else:
+        if not args.henriradovan:
+            x.PrintWikiLines()
+        else:
+            x.PrintHenriLines()
 
 if __name__ == "__main__":
     main()

@@ -178,12 +178,49 @@ class Sched:
         OutMJD = ["(MJD %.2f)" % (Time(ut).mjd) for ut in np.flip(self.StartUTC)]
         [print(om) for om in OutMJD]
 
+def ValidProjID(ProjID):
+    """
+    Check input project ID, determine validity, raise exception if necessary.
+    Until default behavior for www.naic.edu/~arun/cgi-bin/schedrawd.cgi is
+    updated, 'validity' of input ProjID will rely on whether or not it's supported.
+    """
+    SupportedProjIDs = np.array(
+        [
+            'P2780',
+            'P2945',
+            'P2030',
+            'P3436',
+            'GBT18B_226',
+            'GBT20A_998',
+            'GBT20B_307',
+            'GBT20B_997'
+        ]
+    )
+
+    return (ProjID in SupportedProjIDs)
+
+def DetermineTelescope(ProjID):
+    """
+    Determine telescope associated with input project ID.
+    """
+    if 'GBT' in ProjID:
+        telescope = 'GBT'
+    elif ('P' in ProjID) or ('X' in ProjID):
+        telescope = 'AO'
+    else:
+        print('No telescope associated with project: %s' % (ProjID))
+        sys.exit()
+
+    return telescope
+
 def ScrapeSchedAO(project, year):
 
     proj = project.lower()
     PROJ = project.upper()
     yr = year[-2:]
 
+    # For some reason, if 'proj' is nothing/anything default page is P2780 in 2020.
+    # Should take this up with Arun.
     link = "http://www.naic.edu/~arun/cgi-bin/schedrawd.cgi?year=%s&proj=%s" % (
         yr,
         proj,
@@ -334,7 +371,17 @@ def main():
     
     SchedTables = []
     for p in projects:
-        SchedTables.append(ScrapeSchedAO(p, args.year))
+
+        if ValidProjID(p):
+            Telescope = DetermineTelescope(p)
+
+            if Telescope == 'GBT':
+                SchedTables.append(ScrapeSchedGBT(p, args.year))
+            elif Telescope == 'AO':
+                SchedTables.append(ScrapeSchedAO(p, args.year))
+        else:
+            print('Invalid project: %s' % (p))
+            sys.exit()
 
     FullSched = vstack(SchedTables)
     x = Sched(FullSched)

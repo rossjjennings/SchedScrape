@@ -201,21 +201,10 @@ def ValidProjID(ProjID):
     Check input project ID, determine validity, raise exception if necessary.
     Until default behavior for www.naic.edu/~arun/cgi-bin/schedrawd.cgi is
     updated, 'validity' of input ProjID will rely on whether or not it's supported.
-    """
-    SupportedProjIDs = np.array(
-        [
-            'P2780',
-            'P2945',
-            'P2030',
-            'P3436',
-            'GBT18B-226',
-            'GBT20A-998',
-            'GBT20B-307',
-            'GBT20B-997',
-            'GBT20B-362'
-        ]
-    )
 
+    List of supported projects now contained in SupportedProjIDs.list.
+    """
+    SupportedProjIDs = np.loadtxt('SupportedProjIDs.list',dtype='str')
     return (ProjID in SupportedProjIDs)
 
 def DetermineTelescope(ProjID):

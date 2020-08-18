@@ -1,12 +1,12 @@
 # SchedScrape 
 
 # Usage
-No setup.py (yet), so I made an executable with `chmod +x aoScrape.py`. Then,
+No setup.py (yet), so I made an executable with `chmod +x SchedScrape.py`. Then,
 
 ```
 ./SchedScrape.py -h
 usage: SchedScrape.py [-h] [--projects PROJECTS [PROJECTS ...]]
-                      [--year [YEAR]] [--future]
+                      [--year [YEAR]] [--all] [--reverse] [--henriradovan]
 
 GBO/AO Schedule Scraper
 
@@ -16,26 +16,29 @@ optional arguments:
                         Project code(s) (default: None)
   --year [YEAR], -y [YEAR]
                         Year (default: 2020)
-  --future, -f          Print future sessions only. (default: False)
+  --all, -a             Print all sessions in the chosen year. (default:
+                        False)
+  --reverse, -r         Print sessions in reverse order. (default: False)
+  --henriradovan, -hr   Print lines with MJDs. (default: False)
 ```
 
 ```
-./aoScrape.py 'P2780'
-...
-2020 Jul 25: 15:45 - 00:00: P2780 (Session A): <br>
-2020 Jul 26: 00:00 - 03:00: P2780 (Session A): <br>
+./SchedScrape.py -p P2780 --all
+2020 Aug 03: 20:00 - Aug 04: 05:00: P2780 (Session C): <br>
 2020 Jul 26: 07:45 - 11:30: P2780 (Session D): <br>
+2020 Jul 25: 15:45 - Jul 26: 03:00: P2780 (Session A): <br>
 2020 Jul 25: 11:15 - 14:00: P2780 (Session D): <br>
-2020 Jul 20: 19:45 - 00:00: P2780 (Session B): <br>
-2020 Jul 21: 00:00 - 06:15: P2780 (Session B): <br>
-2020 Aug 10: 18:30 - 00:00: P2780 (Session B): <br>
-2020 Aug 11: 00:00 - 05:00: P2780 (Session B): <br>
-2020 Aug 02: 20:00 - 00:00: P2780 (Session C): <br>
-2020 Aug 03: 00:00 - 05:15: P2780 (Session C): <br>
+2020 Jul 20: 19:45 - Jul 21: 06:15: P2780 (Session B): <br>
+2020 Jul 12: 21:15 - Jul 13: 06:30: P2780 (Session C): <br>
+2020 Jul 11: 08:45 - 15:30: P2780 (Session D): <br>
+...
 ```
 
 Output above has been truncated. Prints well-formated lines to be copied to the wiki.
-Does other stuff too.
+Does other stuff too. A current list of project IDs supported (at GBO/AO) can be found
+in SupportedProjIDs.list. Default behavior is to print wiki-format lines, but this is
+in active development and may change soon. See issues for more info and open one or
+several for suggestions, bugs.
 
 ### Dependencies
 

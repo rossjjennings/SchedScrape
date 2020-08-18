@@ -24,6 +24,17 @@ aoDictP2945 = {
     "(e)+(a)": "2317,0030",
 }
 
+obscode_dict = {'0':'F-1400',
+                '1':'A-1400',
+                '2':'A-820',
+                '3':'B-1400',
+                '4':'B-820',
+                '5':'C-1400',
+                '6':'C-820',
+                '7':'D-1400',
+                '8':'D-820',
+                '9':'E-1400',
+                '10':'E-820'}
 
 class Sched:
     """Observatory schedule class
@@ -178,6 +189,12 @@ class Sched:
         OutMJD = ["(MJD %.2f)" % (Time(ut).mjd) for ut in np.flip(self.StartUTC)]
         [print(om) for om in OutMJD]
 
+
+def get_session(id):
+    sess_str = obscode_dict[str(int(id)%11)]
+    return sess_str
+
+
 def ValidProjID(ProjID):
     """
     Check input project ID, determine validity, raise exception if necessary.
@@ -190,10 +207,11 @@ def ValidProjID(ProjID):
             'P2945',
             'P2030',
             'P3436',
-            'GBT18B_226',
-            'GBT20A_998',
-            'GBT20B_307',
-            'GBT20B_997'
+            'GBT18B-226',
+            'GBT20A-998',
+            'GBT20B-307',
+            'GBT20B-997',
+            'GBT20B-362'
         ]
     )
 
@@ -213,8 +231,63 @@ def DetermineTelescope(ProjID):
 
     return telescope
 
-def ScrapeSchedAO(project, year):
 
+def ScrapeSchedGBO(project, year):
+
+    page = requests.get('https://dss.gb.nrao.edu/schedule/public')
+    soup = BeautifulSoup(page.content,'html.parser')
+    table = soup.findChildren('table')[1]
+
+    #wiki_lines = []
+    ProjList = []
+    SessList = []
+    StartList = []
+    EndList = []
+    for rr in table.findChildren('tr'):
+         if not rr.a:
+             date_str = rr.contents[1].text.split()[0]
+         else:
+             proj_str = rr.a['title']
+
+             # Need to implement support/validity check rather than what's here now.
+             if (project in proj_str):
+                 proj_id = proj_str.split(' - ')[0].strip()
+                 sess_id = proj_str.split(' - ')[1].strip()
+                 ProjList.append(proj_id)
+                 SessList.append(sess_id)
+
+                 obs_elems = rr.findChildren('td')
+                 time_window = obs_elems[0].text.strip()
+                 start_et_str = time_window.split(' - ')[0].strip().replace('+','')
+                 end_et_str = time_window.split(' - ')[1].strip().replace('+','')
+
+                 # Obs over ET day boundary, get next end time...etc.
+                 #if '+' in end_et_str:
+
+                 start = '%s %s' % (date_str,start_et_str)
+                 end = '%s %s' % (date_str,end_et_str)
+                 t0 = Time.strptime(start, '%Y-%m-%d %H:%M')
+                 t1 = Time.strptime(end, '%Y-%m-%d %H:%M')
+                 StartList.append(t0)
+                 EndList.append(t1)
+
+                 #SchedTable.add_row((proj_id,sess_id,t0,t1))
+                 #t0_out = t0.strftime('%Y %b %d %H:%M')
+                 #t1_out = t1.strftime('%H:%M')
+                 #str_out = '%s--%s %s: <br>' % (t0_out, t1_out, get_session(sess_id))
+                 #wiki_lines.append(str_out)
+                 #print('%s %s %s (%s)' % (date_str,start_et_str,get_session(sess_id),proj_id))
+
+    SchedTable = Table(
+        [ProjList,SessList,StartList,EndList],    
+        names=('Proj','Sess','StartLocal','EndLocal')
+    )
+    print(SchedTable)
+
+    return SchedTable
+
+
+def ScrapeSchedAO(project, year):
     proj = project.lower()
     PROJ = project.upper()
     yr = year[-2:]
@@ -376,13 +449,18 @@ def main():
             Telescope = DetermineTelescope(p)
 
             if Telescope == 'GBT':
-                SchedTables.append(ScrapeSchedGBT(p, args.year))
+                SchedTables.append(ScrapeSchedGBO(p, args.year))
             elif Telescope == 'AO':
                 SchedTables.append(ScrapeSchedAO(p, args.year))
         else:
             print('Invalid project: %s' % (p))
             sys.exit()
 
+    if Telescope == 'GBT':
+        print('Sched digestion not quite implemented.')
+        sys.exit()
+
+    # This seems problematic if combination of many scheds (maybe; should check)
     FullSched = vstack(SchedTables)
     x = Sched(FullSched)
 
@@ -399,3 +477,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

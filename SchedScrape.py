@@ -120,9 +120,10 @@ class Sched:
                 try:
                     self.SessID.append(aoDictP2780[rsid])
                 except KeyError:
-                    print('Could not match session key, %s.' % (rsid))
+                    print('Could not match session key, %s. Adding empty string...' % (rsid))
+                    self.SessID.append('')
                 except:
-                    print('Something else happened.') 
+                    print('Blurgh. Something else happened.') 
 
     def ObsTimesUTC(self):
         """
@@ -238,50 +239,58 @@ def ScrapeSchedGBO(project, year):
     soup = BeautifulSoup(page.content,'html.parser')
     table = soup.findChildren('table')[1]
 
-    #wiki_lines = []
+    # Calculate local AO start/end times from SchedTable
+    GBO = pytz.timezone("US/Eastern")
+
     ProjList = []
     SessList = []
     StartList = []
     EndList = []
+    WrapList = []
     for rr in table.findChildren('tr'):
          if not rr.a:
              date_str = rr.contents[1].text.split()[0]
          else:
              proj_str = rr.a['title']
 
-             # Need to implement support/validity check rather than what's here now.
              if (project in proj_str):
+                 wrap = 0
                  proj_id = proj_str.split(' - ')[0].strip()
                  sess_id = proj_str.split(' - ')[1].strip()
-                 ProjList.append(proj_id)
-                 SessList.append(sess_id)
 
                  obs_elems = rr.findChildren('td')
                  time_window = obs_elems[0].text.strip()
-                 start_et_str = time_window.split(' - ')[0].strip().replace('+','')
-                 end_et_str = time_window.split(' - ')[1].strip().replace('+','')
+                 start_et_str = time_window.split(' - ')[0].strip()    #.replace('+','')
+                 end_et_str = time_window.split(' - ')[1].strip()    #.replace('+','')
 
-                 # Obs over ET day boundary, get next end time...etc.
-                 #if '+' in end_et_str:
-
-                 start = '%s %s' % (date_str,start_et_str)
-                 end = '%s %s' % (date_str,end_et_str)
-                 t0 = Time.strptime(start, '%Y-%m-%d %H:%M')
-                 t1 = Time.strptime(end, '%Y-%m-%d %H:%M')
-                 StartList.append(t0)
-                 EndList.append(t1)
-
-                 #SchedTable.add_row((proj_id,sess_id,t0,t1))
-                 #t0_out = t0.strftime('%Y %b %d %H:%M')
-                 #t1_out = t1.strftime('%H:%M')
-                 #str_out = '%s--%s %s: <br>' % (t0_out, t1_out, get_session(sess_id))
-                 #wiki_lines.append(str_out)
-                 #print('%s %s %s (%s)' % (date_str,start_et_str,get_session(sess_id),proj_id))
+                 if '+' in end_et_str:
+                     start = '%s %s' % (date_str,start_et_str.replace('+',''))
+                 else:
+                     if '+' in start_et_str:
+                         end = '%s %s' % (date_str,end_et_str.replace('+',''))
+                         wrap = 1
+                     else:
+                         start = '%s %s' % (date_str,start_et_str)
+                         end = '%s %s' % (date_str,end_et_str)
+   
+                     t0 = GBO.localize(datetime.strptime(start, '%Y-%m-%d %H:%M'))
+                     t1 = GBO.localize(datetime.strptime(end, '%Y-%m-%d %H:%M'))
+                     ProjList.append(proj_id)
+                     SessList.append(sess_id)
+                     StartList.append(t0)
+                     EndList.append(t1)
+                     WrapList.append(wrap)
 
     SchedTable = Table(
-        [ProjList,SessList,StartList,EndList],    
-        names=('Proj','Sess','StartLocal','EndLocal')
+        [ProjList,SessList,StartList,EndList,WrapList],    
+        names=('Proj','Sess','StartLocal','EndLocal','DayWrap')
     )
+
+    # Sort table, eventually this tag shouldn't be needed. Cludge fix for now.
+    SortTag = np.array([int(datetime.strftime(st,'%Y%m%d%H%M')) for st in StartList])
+    SchedTable['SortTag'] = SortTag
+    SchedTable.sort(keys=['SortTag'])
+
     print(SchedTable)
 
     return SchedTable
@@ -368,7 +377,7 @@ def ScrapeSchedAO(project, year):
     SortTag = np.array([int(datetime.strftime(st,'%Y%m%d%H%M')) for st in StartAO])
     SchedTable['SortTag'] = SortTag
 
-    # Sort the table by SortTag, then remove this column 
+    # Sort the table by SortTag, ...do I still need this column? 
     SchedTable.sort(keys=['SortTag'])
 
     SchedTable['DayWrap'] = np.zeros(len(SchedTable))
@@ -454,11 +463,12 @@ def main():
                 SchedTables.append(ScrapeSchedAO(p, args.year))
         else:
             print('Invalid project: %s' % (p))
+            print('Try fiddling with case or -/_; automatic fixes for these coming soon...')
             sys.exit()
 
-    if Telescope == 'GBT':
-        print('Sched digestion not quite implemented.')
-        sys.exit()
+    #if Telescope == 'GBT':
+    #    print('Sched digestion not quite implemented.')
+    #    sys.exit()
 
     # This seems problematic if combination of many scheds (maybe; should check)
     FullSched = vstack(SchedTables)

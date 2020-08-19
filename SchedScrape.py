@@ -78,11 +78,15 @@ class Sched:
         self.SessID = None
         self.StartUTC = None
         self.EndUTC = None
+        self.StartMJD = None
+        self.EndMJD = None
+
+        self.CSVLines = None
         self.WikiLines = None
 
         self.TranslateSess()
-        self.ObsTimesUTC()
-        self.GetWikiLines()
+        self.ConvertObsTimes()
+        # Not by default: self.GetWikiLines()
         self.SortArrays()
 
     def SortArrays(self):
@@ -102,7 +106,7 @@ class Sched:
         self.SessID = np.array(self.SessID)[SortInds]
         self.StartUTC = self.StartUTC[SortInds]
         self.EndUTC = self.EndUTC[SortInds]
-        self.WikiLines = np.array(self.WikiLines)[SortInds]
+        #self.WikiLines = np.array(self.WikiLines)[SortInds]
 
     # Not sure this is necessary...
     def GetObservatories(self):
@@ -136,15 +140,18 @@ class Sched:
                 except:
                     print("Blurgh. Something else happened.")
 
-    def ObsTimesUTC(self):
+    def ConvertObsTimes(self):
         """
-        Convert session start/end times -> UTC.
+        Convert session start/end times -> UTC, MJD.
         """
 
         UTC = pytz.utc
 
         self.StartUTC = np.array([sl.astimezone(UTC) for sl in self.StartLoc])
         self.EndUTC = np.array([el.astimezone(UTC) for el in self.EndLoc])
+
+        self.StartMJD = np.array([Time(ut).mjd for ut in self.StartUTC])
+        self.EndMJD = np.array([Time(ut).mjd for ut in self.EndUTC])
 
     def GetWikiLines(self):
         """For example:
@@ -200,8 +207,6 @@ class Sched:
         By default, only future sessions are printed (all=False) with the latest date
         on top (reverse=True).
         """
-        StartMJD = ["%.2f" % (Time(ut).mjd) for ut in np.flip(self.StartUTC)]
-
         # if not all:
         #    # Find UTC start times after Time.now()
         #    TimeNow = Time.now()
@@ -210,11 +215,11 @@ class Sched:
 
         for i in range(self.nRows):
             print(
-                "%s, %s, %s, %s, %s"
+                "%s, %s, %.2f, %s, %s"
                 % (
                     self.ProjID[i],
                     self.SessID[i],
-                    StartMJD[i],
+                    self.StartMJD[i],
                     self.StartLoc[i],
                     self.EndLoc[i],
                 )

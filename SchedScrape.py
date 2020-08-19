@@ -160,7 +160,6 @@ class Sched:
         # Calculate durations
         dt = self.EndUTC - self.StartUTC
         self.Duration = np.array([TimeDelta(t).to(u.hour).value for t in dt])
-        print(self.Duration)
 
     def GetWikiLines(self):
         """For example:
@@ -244,6 +243,39 @@ class Sched:
             OutLines = self.CSVLines[FutureInds]
         else:
             OutLines = self.CSVLines
+        if reverse:
+            [print(cl) for cl in np.flip(OutLines)]
+        else:
+            [print(wl) for wl in OutLines]
+
+    def GetGBNCCLines(self):
+        """
+        Blah...
+        """
+
+        self.GBNCCLines = []
+        for i in range(self.nRows):
+            GBNCCLine = "%s (%.2fh) -- ??" % (
+                datetime.strftime(self.StartLoc[i], "%Y %b %d: %H:%M"),
+                self.Duration[i],
+            )
+            self.GBNCCLines.append(GBNCCLine)
+
+        self.GBNCCLines = np.array(self.GBNCCLines)
+
+    def PrintGBNCC(self, all=False, reverse=True):
+        """
+        blah...
+        """
+
+        self.GetGBNCCLines()
+
+        if not all:
+            FutureInds = np.where(self.StartUTC > Time.now())
+            OutLines = self.GBNCCLines[FutureInds]
+        else:
+            OutLines = self.GBNCCLines
+
         if reverse:
             [print(cl) for cl in np.flip(OutLines)]
         else:
@@ -523,7 +555,7 @@ def main():
     elif args.printformat == 'wiki':
         x.PrintWiki(all=args.all,reverse=args.reverse)
     elif args.printformat == 'gbncc':
-        pass
+        x.PrintGBNCC(all=args.all,reverse=args.reverse) 
     elif args.printformat == 'none':
         pass
     else:

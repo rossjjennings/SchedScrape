@@ -5,8 +5,9 @@ No setup.py (yet), so I made an executable with `chmod +x SchedScrape.py`. Then,
 
 ```
 ./SchedScrape.py -h
-usage: SchedScrape.py [-h] [--projects PROJECTS [PROJECTS ...]]
-                      [--year [YEAR]] [--all] [--reverse] [--henriradovan]
+usage: SchedScrape.py [-h] --projects PROJECTS [PROJECTS ...] [--year [YEAR]]
+                      [--all] [--reverse]
+                      [--printformat [{wiki,none,gbncc,default}]]
 
 GBO/AO Schedule Scraper
 
@@ -19,7 +20,8 @@ optional arguments:
   --all, -a             Print all sessions in the chosen year. (default:
                         False)
   --reverse, -r         Print sessions in reverse order. (default: False)
-  --henriradovan, -hr   Print lines with MJDs. (default: False)
+  --printformat [{wiki,none,gbncc,default}], -pf [{wiki,none,gbncc,default}]
+                        Format of schedule info printed. (default: default)
 ```
 
 ```

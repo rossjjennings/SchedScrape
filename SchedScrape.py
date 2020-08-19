@@ -507,10 +507,16 @@ def main():
     FullSched = vstack(SchedTables)
     x = Sched(FullSched)
 
-    if args.all:
-        x.PrintDefault(all=True)
+    if args.printformat == 'default':
+        x.PrintDefault(all=args.all,reverse=args.reverse)
+    elif args.printformat == 'wiki':
+        x.PrintWiki(all=args.all,reverse=args.reverse)
+    elif args.printformat == 'gbncc':
+        pass
+    elif args.printformat == 'none':
+        pass
     else:
-        x.PrintDefault()
+        print('How?...')
 
 
 if __name__ == "__main__":

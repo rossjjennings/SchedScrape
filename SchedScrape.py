@@ -7,7 +7,8 @@ import requests
 from bs4 import BeautifulSoup
 from astropy.table import vstack, Table
 from astropy.io import ascii
-from astropy.time import Time
+from astropy.time import Time,TimeDelta
+from astropy import units as u
 import pytz
 from datetime import datetime, timedelta
 import argparse
@@ -80,6 +81,7 @@ class Sched:
         self.EndUTC = None
         self.StartMJD = None
         self.EndMJD = None
+        self.Duration = None
 
         self.CSVLines = None
         self.WikiLines = None
@@ -145,11 +147,20 @@ class Sched:
 
         UTC = pytz.utc
 
+        # UTC
         self.StartUTC = np.array([sl.astimezone(UTC) for sl in self.StartLoc])
         self.EndUTC = np.array([el.astimezone(UTC) for el in self.EndLoc])
 
+        # MJD
         self.StartMJD = np.array([Time(ut).mjd for ut in self.StartUTC])
         self.EndMJD = np.array([Time(ut).mjd for ut in self.EndUTC])
+
+        # LST?
+
+        # Calculate durations
+        dt = self.EndUTC - self.StartUTC
+        self.Duration = np.array([TimeDelta(t).to(u.hour).value for t in dt])
+        print(self.Duration)
 
     def GetWikiLines(self):
         """For example:

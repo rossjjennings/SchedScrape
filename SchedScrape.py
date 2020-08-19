@@ -86,7 +86,6 @@ class Sched:
 
         self.TranslateSess()
         self.ConvertObsTimes()
-        # Not by default: self.GetWikiLines()
         self.SortArrays()
 
     def SortArrays(self):
@@ -106,7 +105,6 @@ class Sched:
         self.SessID = np.array(self.SessID)[SortInds]
         self.StartUTC = self.StartUTC[SortInds]
         self.EndUTC = self.EndUTC[SortInds]
-        #self.WikiLines = np.array(self.WikiLines)[SortInds]
 
     # Not sure this is necessary...
     def GetObservatories(self):
@@ -180,16 +178,18 @@ class Sched:
             )
             self.WikiLines.append(WikiLine)
 
-    def PrintWikiLines(self, all=False, reverse=True):
+        self.WikiLines = np.array(self.WikiLines)
+
+    def PrintWiki(self, all=False, reverse=True):
         """
         Prints schedule lines to copy directly to the wiki. By default, only future
         sessions are printed (all=False) with the latest date on top (reverse=True).
         """
 
+        self.GetWikiLines()
+
         if not all:
-            # Find UTC start times after Time.now()
-            TimeNow = Time.now()
-            FutureInds = np.where(self.StartUTC > TimeNow)
+            FutureInds = np.where(self.StartUTC > Time.now())
             OutLines = self.WikiLines[FutureInds]
 
         else:
@@ -200,30 +200,43 @@ class Sched:
         else:
             [print(wl) for wl in OutLines]
 
-    def PrintInfoDefault(self, all=False, reverse=True):
+    def GetCSVLines(self):
+        """
+        Blah...
+        """
+
+        self.CSVLines = []
+        for i in range(self.nRows):
+            CSVLine = "%s, %s, %.2f, %s, %s" % (
+                self.ProjID[i],
+                self.SessID[i],
+                self.StartMJD[i],
+                self.StartLoc[i],
+                self.EndLoc[i],
+            )
+            self.CSVLines.append(CSVLine)
+
+        self.CSVLines = np.array(self.CSVLines)
+
+    def PrintDefault(self, all=False, reverse=True):
         """
         Prints relevant scheduling info as CSV.
             [ProjID], [SessID], [Start MJD], [StartLoc], [EndLoc]
         By default, only future sessions are printed (all=False) with the latest date
         on top (reverse=True).
         """
-        # if not all:
-        #    # Find UTC start times after Time.now()
-        #    TimeNow = Time.now()
-        #    FutureInds = np.where(self.StartUTC > TimeNow)
-        #    OutLines = self.WikiLines[FutureInds]
 
-        for i in range(self.nRows):
-            print(
-                "%s, %s, %.2f, %s, %s"
-                % (
-                    self.ProjID[i],
-                    self.SessID[i],
-                    self.StartMJD[i],
-                    self.StartLoc[i],
-                    self.EndLoc[i],
-                )
-            )
+        self.GetCSVLines()
+
+        if not all:
+            FutureInds = np.where(self.StartUTC > Time.now())
+            OutLines = self.CSVLines[FutureInds]
+        else:
+            OutLines = self.CSVLines
+        if reverse:
+            [print(cl) for cl in np.flip(OutLines)]
+        else:
+            [print(wl) for wl in OutLines]
 
 
 def get_session(id):
@@ -495,9 +508,9 @@ def main():
     x = Sched(FullSched)
 
     if args.all:
-        x.PrintInfoDefault()
+        x.PrintDefault(all=True)
     else:
-        x.PrintInfoDefault()
+        x.PrintDefault()
 
 
 if __name__ == "__main__":

@@ -182,14 +182,24 @@ class Sched:
         else:
             [print(wl) for wl in OutLines]
 
-    def PrintHenriLines(self):
+    def PrintInfoDefault(self,all=False,reverse=True):
         """
-        Prints schedule lines to copy directly to the wiki. By default, all sessions
-        are printed with the latest date on top (reverse=True).
+        Prints relevant scheduling info as CSV.
+            [ProjID], [SessID], [Start MJD], [StartLoc], [EndLoc]
+        By default, only future sessions are printed (all=False) with the latest date
+        on top (reverse=True).
         """
-        OutMJD = ["(MJD %.2f)" % (Time(ut).mjd) for ut in np.flip(self.StartUTC)]
-        [print(om) for om in OutMJD]
+        StartMJD = ["%.2f" % (Time(ut).mjd) for ut in np.flip(self.StartUTC)]
 
+        #if not all:
+        #    # Find UTC start times after Time.now()
+        #    TimeNow = Time.now()
+        #    FutureInds = np.where(self.StartUTC > TimeNow)
+        #    OutLines = self.WikiLines[FutureInds]
+
+        for i in range(self.nRows):
+            print("%s, %s, %s, %s, %s" %
+                (self.ProjID[i],self.SessID[i],StartMJD[i],self.StartLoc[i],self.EndLoc[i]))
 
 def get_session(id):
     sess_str = obscode_dict[str(int(id)%11)]
@@ -406,6 +416,7 @@ def main():
         "-p",
         type=str,
         nargs="+",
+        required=True,
         help="Project code(s)",
     )
     parser.add_argument(
@@ -429,10 +440,12 @@ def main():
         help="Print sessions in reverse order."
     )
     parser.add_argument(
-        "--henriradovan",
-        "-hr",
-        action="store_true",
-        help="Print lines with MJDs."
+        "--printformat",
+        "-pf",
+        choices=['wiki','none','gbncc','default'],
+        nargs="?",
+        default='default',
+        help="Format of schedule info printed."
     )
 
     # To print usage if no arguments are provided.
@@ -462,15 +475,9 @@ def main():
     x = Sched(FullSched)
 
     if args.all:
-        if not args.henriradovan:
-            x.PrintWikiLines(all=True)
-        else:
-            x.PrintHenriLines()
+        x.PrintInfoDefault()
     else:
-        if not args.henriradovan:
-            x.PrintWikiLines()
-        else:
-            x.PrintHenriLines()
+        x.PrintInfoDefault()
 
 if __name__ == "__main__":
     main()

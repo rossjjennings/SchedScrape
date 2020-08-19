@@ -280,8 +280,6 @@ def ScrapeSchedGBO(project, year):
     SchedTable['SortTag'] = SortTag
     SchedTable.sort(keys=['SortTag'])
 
-    print(SchedTable)
-
     return SchedTable
 
 
@@ -437,6 +435,11 @@ def main():
         help="Print lines with MJDs."
     )
 
+    # To print usage if no arguments are provided.
+    if len(sys.argv)==1:
+        parser.print_help()
+        parser.exit()
+
     args = parser.parse_args()
     projects = [str(item) for item in args.projects[0].split(',')]
     
@@ -455,11 +458,6 @@ def main():
             print('Try fiddling with case or -/_; automatic fixes for these coming soon...')
             sys.exit()
 
-    #if Telescope == 'GBT':
-    #    print('Sched digestion not quite implemented.')
-    #    sys.exit()
-
-    # This seems problematic if combination of many scheds (maybe; should check)
     FullSched = vstack(SchedTables)
     x = Sched(FullSched)
 

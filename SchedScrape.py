@@ -78,19 +78,17 @@ class Sched:
     ----------
     table: astropy.table.Table
         Pertinent scheduling information; assumed columns are...
-            SortTag (YYYYMMDDHHMM start time integers for easy sorting),
-            Proj (project ID; e.g. P2780), 
-            Sess (raw session ID; e.g. (a)),
-            StartLocal (observatory's local start time),
-            EndLocal (local end time),
-            DayWrap (boolean marker for sessions that cross a day boundary).
+            ProjID (project ID; e.g. P2780), 
+            RawSessID (raw session ID; e.g. (a)),
+            StartLoc (observatory's local start time),
+            EndLoc (local end time),
+            Wraps (boolean marker for sessions that cross a day boundary).
     """
 
     def __init__(self, table):
 
         self.Table = table
         self.nRows = len(table)
-        self.Tags = table["Tags"]
         self.ProjID = table["ProjID"]
         self.RawSessID = table["RawSessID"]
         self.StartLoc = table["StartLoc"]

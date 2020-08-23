@@ -9,6 +9,7 @@ from astropy.table import vstack, Table
 from astropy.io import ascii
 from astropy.time import Time,TimeDelta
 from astropy import units as u
+from astropy import log
 import pytz
 from datetime import datetime, timedelta
 import argparse
@@ -44,9 +45,24 @@ obscode_dict = {
     "10": "E-820",
 }
 
-def get_session(id):
-    sess_str = obscode_dict[str(int(id) % 11)]
-    return sess_str
+def GetSession(sid):
+    sess_str = obscode_dict[str(int(sid) % 11)]
+    return SessStr
+
+def FixProj(pid):
+    """
+    Make code more robust to handling ProjIDs with capitalization or delimiter issues.
+    """
+    TempPid = pid
+    pid = pid.upper()
+    if pid != TempPid:
+        log.warning('Capitalizing ProjID...')
+
+    if '_' in pid: 
+        pid = pid.replace('_','-')
+        log.warning('Replacing underscore with hyphen...')
+
+    return pid
 
 
 class Sched:
@@ -132,6 +148,8 @@ class Sched:
                 self.SessID.append(aoDictP2780[rsid])
             elif "2945" in pid:
                 self.SessID.append(aoDictP2945[rsid])
+            elif "20B-307" in pid:
+                pass
             else:
                 try:
                     self.SessID.append(aoDictP2780[rsid])
@@ -532,6 +550,7 @@ def main():
     SchedTables = []
     for p in projects:
 
+        p = FixProj(p)
         if ValidProjID(p):
             Telescope = DetermineTelescope(p)
 

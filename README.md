@@ -44,8 +44,6 @@ several for suggestions, bugs.
 
 ### Dependencies
 
-Before you can use SchedScrape, make sure you have access to:
-
 ```
 numpy
 astropy
@@ -55,8 +53,6 @@ pytz
 ```
 
 ### Get SchedScrape 
-
-To grab a copy of SchedScrape, do:
 
 ```
 git clone git://github.com/swiggumj/SchedScrape.git

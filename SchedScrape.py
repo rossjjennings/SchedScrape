@@ -1,13 +1,12 @@
 #!/usr/bin/env python
 
-import os
 import sys
 import numpy as np
 import requests
 from bs4 import BeautifulSoup
 from astropy.table import vstack, Table
 from astropy.io import ascii
-from astropy.time import Time,TimeDelta
+from astropy.time import Time, TimeDelta
 from astropy import units as u
 from astropy import log
 import pytz

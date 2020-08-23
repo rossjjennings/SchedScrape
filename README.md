@@ -47,8 +47,11 @@ several for suggestions, bugs.
 Before you can use SchedScrape, make sure you have access to:
 
 ```
+numpy
 astropy
-...and some other things...
+requests
+BeautifulSoup
+pytz
 ```
 
 ### Get SchedScrape 

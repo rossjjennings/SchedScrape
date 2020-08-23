@@ -88,6 +88,7 @@ class Sched:
 
     def __init__(self, table):
 
+        self.Tab = table
         self.nRows = len(table)
         self.Tags = table["SortTag"]
         self.ProjID = table["Proj"]
@@ -131,6 +132,12 @@ class Sched:
     def GetObservatories(self):
         """
         Use project codes to determine corresponding observatory.
+        """
+        pass
+
+    def MergeAdjacent(self):
+        """
+        Merge sched lines that are obviously consecutive, same session.
         """
         pass
 
@@ -211,29 +218,12 @@ class Sched:
 
         self.WikiLines = np.array(self.WikiLines)
 
-    def PrintWiki(self, all=False, reverse=True):
-        """
-        Prints schedule lines to copy directly to the wiki. By default, only future
-        sessions are printed (all=False) with the latest date on top (reverse=True).
-        """
-
-        self.GetWikiLines()
-
-        if not all:
-            FutureInds = np.where(self.StartUTC > Time.now())
-            OutLines = self.WikiLines[FutureInds]
-
-        else:
-            OutLines = self.WikiLines
-
-        if reverse:
-            [print(wl) for wl in np.flip(OutLines)]
-        else:
-            [print(wl) for wl in OutLines]
-
     def GetDefLines(self):
-        """
-        Blah...
+        """For example:
+        P2945 | 1713 | 59050.05 | 2020-07-19 21:15:00-04:00 | 2020-07-19 22:15:00-04:00
+        P2945 | 2043 | 59052.21 | 2020-07-22 01:00:00-04:00 | 2020-07-22 02:00:00-04:00
+        P2945 | 2317,0030 | 59056.29 | 2020-07-26 03:00:00-04:00 | 2020-07-26 04:45:00-04:00
+        P2945 | 1640 | 59056.98 | 2020-07-26 19:30:00-04:00 | 2020-07-26 20:30:00-04:00
         """
 
         self.DefLines = []
@@ -249,30 +239,12 @@ class Sched:
 
         self.DefLines = np.array(self.DefLines)
 
-    def PrintDefault(self, all=False, reverse=True):
-        """
-        Prints relevant scheduling info with '|' delimiter.
-            [ProjID] | [SessID] | [Start MJD] | [StartLoc] | [EndLoc]
-        By default, only future sessions are printed (all=False) with the latest date
-        on top (reverse=True).
-        """
-
-        self.GetDefLines()
-
-        if not all:
-            FutureInds = np.where(self.StartUTC > Time.now())
-            OutLines = self.DefLines[FutureInds]
-        else:
-            OutLines = self.DefLines
-        if reverse:
-            [print(cl) for cl in np.flip(OutLines)]
-        else:
-            [print(wl) for wl in OutLines]
-
     def GetGBNCCLines(self):
-        """
-        Lines suitable for copying directly to obs sign-up. E.g.
-            2020 Aug 23 (5.00h) -- ??
+        """For example:
+        2020 Aug 23: 15:15 (4.00h) -- ??
+        2020 Aug 23: 22:15 (1.00h) -- ??
+        2020 Aug 23: 23:15 (4.00h) -- ??
+        2020 Aug 24: 13:00 (2.00h) -- ??
         """
 
         self.GBNCCLines = []
@@ -285,18 +257,38 @@ class Sched:
 
         self.GBNCCLines = np.array(self.GBNCCLines)
 
-    def PrintGBNCC(self, all=False, reverse=True):
+    def PrintText(self, LineType, all=False, reverse=True):
         """
-        Print desired GBNCC sched lines. 
+        Print desired sched lines with desired formatting/sorting applied.
+
+        default, e.g.:
+            P2945 | 2317,0030 | 59056.29 | 2020-07-26 03:00:00-04:00 | 2020-07-26 04:45:00-04:00
+
+        wiki, e.g.:
+            2020 Jul 26: 03:00 - 04:45: P2945 (2317,0030): <br>
+
+        gbncc, e.g.:
+            2020 Aug 23: 23:15 (4.00h) -- ?? 
         """
 
-        self.GetGBNCCLines()
+        if LineType == 'default':
+            self.GetDefLines()
+            InLines = self.DefLines
+        elif LineType == 'wiki':
+            self.GetWikiLines()
+            InLines = self.WikiLines
+        elif LineType == 'gbncc':
+            self.GetGBNCCLines()
+            InLines = self.GBNCCLines
+        else:
+            log.error('LineType %s not recognized.' % (LineType))
+            sys.exit()
 
         if not all:
             FutureInds = np.where(self.StartUTC > Time.now())
-            OutLines = self.GBNCCLines[FutureInds]
+            OutLines = InLines[FutureInds]
         else:
-            OutLines = self.GBNCCLines
+            OutLines = InLines
 
         if reverse:
             [print(cl) for cl in np.flip(OutLines)]
@@ -566,17 +558,7 @@ def main():
 
     FullSched = vstack(SchedTables)
     x = Sched(FullSched)
-
-    if args.printformat == 'default':
-        x.PrintDefault(all=args.all,reverse=args.reverse)
-    elif args.printformat == 'wiki':
-        x.PrintWiki(all=args.all,reverse=args.reverse)
-    elif args.printformat == 'gbncc':
-        x.PrintGBNCC(all=args.all,reverse=args.reverse) 
-    elif args.printformat == 'none':
-        pass
-    else:
-        print('How?...')
+    x.PrintText(args.printformat,all=args.all,reverse=args.reverse)
 
 
 if __name__ == "__main__":

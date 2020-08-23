@@ -88,14 +88,14 @@ class Sched:
 
     def __init__(self, table):
 
-        self.Tab = table
+        self.Table = table
         self.nRows = len(table)
-        self.Tags = table["SortTag"]
-        self.ProjID = table["Proj"]
-        self.RawSessID = table["Sess"]
-        self.StartLoc = table["StartLocal"]
-        self.EndLoc = table["EndLocal"]
-        self.Wraps = table["DayWrap"]
+        self.Tags = table["Tags"]
+        self.ProjID = table["ProjID"]
+        self.RawSessID = table["RawSessID"]
+        self.StartLoc = table["StartLoc"]
+        self.EndLoc = table["EndLoc"]
+        self.Wraps = table["Wraps"]
         self.SessID = None
         self.StartUTC = None
         self.EndUTC = None
@@ -105,28 +105,14 @@ class Sched:
 
         self.DefLines = None
         self.WikiLines = None
+        self.GBNCCLines = None
 
         self.TranslateSess()
         self.ConvertObsTimes()
-        self.SortArrays()
+        # MERGE HERE!...
 
-    def SortArrays(self):
-        """
-        By default sort by Tags. Maybe add more functionality later.
-        THERE MUST BE A BETTER WAY TO DO THIS OMG.
-        """
-
-        SortInds = np.argsort(self.Tags)
-
-        self.Tags = self.Tags[SortInds]
-        self.ProjID = self.ProjID[SortInds]
-        self.RawSessID = self.RawSessID[SortInds]
-        self.StartLoc = self.StartLoc[SortInds]
-        self.EndLoc = self.EndLoc[SortInds]
-        self.Wraps = self.Wraps[SortInds]
-        self.SessID = np.array(self.SessID)[SortInds]
-        self.StartUTC = self.StartUTC[SortInds]
-        self.EndUTC = self.EndUTC[SortInds]
+        # Sort merged Sched.Table rows
+        self.Table.sort(keys=['StartMJD'])
 
     # Not sure this is necessary...
     def GetObservatories(self):
@@ -148,7 +134,7 @@ class Sched:
         """
 
         self.SessID = []
-        for pid, rsid in zip(self.ProjID, self.RawSessID):
+        for pid, rsid in zip(self.Table['ProjID'],self.Table['RawSessID']):
 
             if "2780" in pid:
                 self.SessID.append(aoDictP2780[rsid])
@@ -168,6 +154,9 @@ class Sched:
                 except:
                     print("Blurgh. Something else happened.")
 
+        self.SessID = np.array(self.SessID)
+        self.Table['SessID'] = self.SessID
+
     def ConvertObsTimes(self):
         """
         Convert session start/end times -> UTC, MJD.
@@ -177,17 +166,23 @@ class Sched:
 
         # UTC
         self.StartUTC = np.array([sl.astimezone(UTC) for sl in self.StartLoc])
+        self.Table['StartUTC'] = self.StartUTC
         self.EndUTC = np.array([el.astimezone(UTC) for el in self.EndLoc])
+        self.Table['EndUTC'] = self.EndUTC
 
         # MJD
         self.StartMJD = np.array([Time(ut).mjd for ut in self.StartUTC])
+        self.Table['StartMJD'] = self.StartMJD
         self.EndMJD = np.array([Time(ut).mjd for ut in self.EndUTC])
+        self.Table['EndMJD'] = self.EndMJD
 
         # LST?
+        # Later...
 
         # Calculate durations
         dt = self.EndUTC - self.StartUTC
         self.Duration = np.array([TimeDelta(t).to(u.hour).value for t in dt])
+        self.Table['Duration'] = self.Duration
 
     def GetWikiLines(self):
         """For example:
@@ -198,12 +193,13 @@ class Sched:
         """
 
         self.WikiLines = []
-        for r, (st, et) in enumerate(zip(self.StartLoc, self.EndLoc)):
+        for i, (st, et) in enumerate(zip(self.Table['StartLoc'],self.Table['EndLoc'])):
             WikiStart = datetime.strftime(st, "%Y %b %d: %H:%M")
 
             # Check for session spanning multiple columns (days)
             # if datetime.strftime(st,'%d') == datetime.strftime(et,'%d'):
-            if not self.Wraps[r]:
+            # FIX! Do not need "Wraps" info for this.
+            if not self.Table['Wraps'][i]:
                 WikiEnd = datetime.strftime(et, "%H:%M")
             else:
                 WikiEnd = datetime.strftime(et, "%b %d: %H:%M")
@@ -211,12 +207,13 @@ class Sched:
             WikiLine = "%s - %s: %s (%s): <br>" % (
                 WikiStart,
                 WikiEnd,
-                self.ProjID[r],
-                self.SessID[r],
+                self.Table['ProjID'][i],
+                self.Table['SessID'][i],
             )
             self.WikiLines.append(WikiLine)
 
         self.WikiLines = np.array(self.WikiLines)
+        self.Table['OutText'] = self.WikiLines
 
     def GetDefLines(self):
         """For example:
@@ -229,15 +226,16 @@ class Sched:
         self.DefLines = []
         for i in range(self.nRows):
             DefLine = "%s | %s | %.2f | %s | %s" % (
-                self.ProjID[i],
-                self.SessID[i],
-                self.StartMJD[i],
-                self.StartLoc[i],
-                self.EndLoc[i],
+                self.Table['ProjID'][i],
+                self.Table['SessID'][i],
+                self.Table['StartMJD'][i],
+                self.Table['StartLoc'][i],
+                self.Table['EndLoc'][i],
             )
             self.DefLines.append(DefLine)
 
         self.DefLines = np.array(self.DefLines)
+        self.Table['OutText'] = self.DefLines
 
     def GetGBNCCLines(self):
         """For example:
@@ -247,15 +245,17 @@ class Sched:
         2020 Aug 24: 13:00 (2.00h) -- ??
         """
 
+        # Should re-write these as list comprehensions
         self.GBNCCLines = []
         for i in range(self.nRows):
             GBNCCLine = "%s (%.2fh) -- ??" % (
-                datetime.strftime(self.StartLoc[i], "%Y %b %d: %H:%M"),
-                self.Duration[i],
+                datetime.strftime(self.Table['StartLoc'][i], "%Y %b %d: %H:%M"),
+                self.Table['Duration'][i],
             )
             self.GBNCCLines.append(GBNCCLine)
 
         self.GBNCCLines = np.array(self.GBNCCLines)
+        self.Table['OutText'] = self.GBNCCLines
 
     def PrintText(self, LineType, all=False, reverse=True):
         """
@@ -273,22 +273,19 @@ class Sched:
 
         if LineType == 'default':
             self.GetDefLines()
-            InLines = self.DefLines
         elif LineType == 'wiki':
             self.GetWikiLines()
-            InLines = self.WikiLines
         elif LineType == 'gbncc':
             self.GetGBNCCLines()
-            InLines = self.GBNCCLines
         else:
             log.error('LineType %s not recognized.' % (LineType))
             sys.exit()
 
         if not all:
-            FutureInds = np.where(self.StartUTC > Time.now())
-            OutLines = InLines[FutureInds]
+            FutureInds = np.where(self.Table['StartUTC'] > Time.now())
+            OutLines = self.Table['OutText'][FutureInds]
         else:
-            OutLines = InLines
+            OutLines = self.Table['OutText'] 
 
         if reverse:
             [print(cl) for cl in np.flip(OutLines)]
@@ -372,13 +369,13 @@ def ScrapeGBO(project, year):
 
     SchedTable = Table(
         [ProjList, SessList, StartList, EndList, WrapList],
-        names=("Proj", "Sess", "StartLocal", "EndLocal", "DayWrap"),
+        names=("ProjID", "RawSessID", "StartLoc", "EndLoc", "Wraps"),
     )
 
     # Sort table, eventually this tag shouldn't be needed. Cludge fix for now.
     SortTag = np.array([int(datetime.strftime(st, "%Y%m%d%H%M")) for st in StartList])
-    SchedTable["SortTag"] = SortTag
-    SchedTable.sort(keys=["SortTag"])
+    SchedTable["Tags"] = SortTag
+    SchedTable.sort(keys=["Tags"])
 
     return SchedTable
 
@@ -415,8 +412,8 @@ def ScrapeAO(project, year):
 
     # Fix SchedTable column names (more descriptive)
     SchedTable.rename_column("col1", "DateStr")
-    SchedTable.rename_column("col2", "Proj")
-    SchedTable.rename_column("col6", "Sess")
+    SchedTable.rename_column("col2", "ProjID")
+    SchedTable.rename_column("col6", "RawSessID")
     SchedTable.rename_column("col9", "StartLST")
     SchedTable.rename_column("col10", "EndLST")
     SchedTable.rename_column("col12", "TimeSys")
@@ -460,30 +457,30 @@ def ScrapeAO(project, year):
         ]
     )
 
-    SchedTable["StartLocal"] = StartAO
-    SchedTable["EndLocal"] = EndAO
+    SchedTable["StartLoc"] = StartAO
+    SchedTable["EndLoc"] = EndAO
 
     SortTag = np.array([int(datetime.strftime(st, "%Y%m%d%H%M")) for st in StartAO])
-    SchedTable["SortTag"] = SortTag
+    SchedTable["Tags"] = SortTag
 
     # Sort the table by SortTag, ...do I still need this column?
-    SchedTable.sort(keys=["SortTag"])
+    SchedTable.sort(keys=["Tags"])
 
-    SchedTable["DayWrap"] = np.zeros(len(SchedTable))
+    SchedTable["Wraps"] = np.zeros(len(SchedTable))
     RemoveRows = []
     for r in range(len(SchedTable) - 1):
 
         # Merge sessions continuing over a day boundary
-        if (SchedTable["EndLocal"][r] == SchedTable["StartLocal"][r + 1]) and (
-            SchedTable["Sess"][r] == SchedTable["Sess"][r + 1]
+        if (SchedTable["EndLoc"][r] == SchedTable["StartLoc"][r + 1]) and (
+            SchedTable["RawSessID"][r] == SchedTable["RawSessID"][r + 1]
         ):
-            SchedTable["EndLocal"][r] = SchedTable["EndLocal"][r + 1]
-            SchedTable["DayWrap"][r] = 1
+            SchedTable["EndLoc"][r] = SchedTable["EndLoc"][r + 1]
+            SchedTable["Wraps"][r] = 1
             RemoveRows.append(r + 1)
 
         # Merge adjacent P2945 sessions
-        elif (SchedTable["EndLocal"][r] == SchedTable["StartLocal"][r + 1]) and (
-            SchedTable["Proj"][r] == SchedTable["Proj"][r + 1] == "P2945"
+        elif (SchedTable["EndLoc"][r] == SchedTable["StartLoc"][r + 1]) and (
+            SchedTable["ProjID"][r] == SchedTable["ProjID"][r + 1] == "P2945"
         ):
             pass
 

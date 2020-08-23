@@ -37,7 +37,7 @@ P2780 | Session C | 58893.46 | 2020-02-14 07:00:00-04:00 | 2020-02-14 16:30:00-0
 
 ```
 ./SchedScrape.py -p P2780,p2945 --all --printformat wiki -r
-WARNING: Capitalizing ProjID... [__main__]
+WARNING: Capitalizing ProjID: p2945 -> P2945 [__main__]
 ...
 2020 Aug 06: 03:45 - 04:45: P2945 (0030): <br>
 2020 Aug 06: 02:45 - 03:45: P2945 (2317): <br>

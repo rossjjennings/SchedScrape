@@ -52,14 +52,15 @@ def FixProj(pid):
     """
     Make code more robust to handling ProjIDs with capitalization or delimiter issues.
     """
-    TempPid = pid
+    TempPidCap = pid
     pid = pid.upper()
-    if pid != TempPid:
-        log.warning('Capitalizing ProjID...')
+    if pid != TempPidCap:
+        log.warning('Capitalizing ProjID: %s -> %s' % (TempPidCap,pid))
 
     if '_' in pid: 
+        TempPidHyph = pid
         pid = pid.replace('_','-')
-        log.warning('Replacing underscore with hyphen...')
+        log.warning('Replacing underscore with hyphen: %s -> %s' % (TempPidHyph,pid))
 
     return pid
 

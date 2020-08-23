@@ -44,6 +44,10 @@ obscode_dict = {
     "10": "E-820",
 }
 
+def get_session(id):
+    sess_str = obscode_dict[str(int(id) % 11)]
+    return sess_str
+
 
 class Sched:
     """Observatory schedule class
@@ -83,7 +87,7 @@ class Sched:
         self.EndMJD = None
         self.Duration = None
 
-        self.CSVLines = None
+        self.DefLines = None
         self.WikiLines = None
 
         self.TranslateSess()
@@ -210,39 +214,39 @@ class Sched:
         else:
             [print(wl) for wl in OutLines]
 
-    def GetCSVLines(self):
+    def GetDefLines(self):
         """
         Blah...
         """
 
-        self.CSVLines = []
+        self.DefLines = []
         for i in range(self.nRows):
-            CSVLine = "%s, %s, %.2f, %s, %s" % (
+            DefLine = "%s | %s | %.2f | %s | %s" % (
                 self.ProjID[i],
                 self.SessID[i],
                 self.StartMJD[i],
                 self.StartLoc[i],
                 self.EndLoc[i],
             )
-            self.CSVLines.append(CSVLine)
+            self.DefLines.append(DefLine)
 
-        self.CSVLines = np.array(self.CSVLines)
+        self.DefLines = np.array(self.DefLines)
 
     def PrintDefault(self, all=False, reverse=True):
         """
-        Prints relevant scheduling info as CSV.
-            [ProjID], [SessID], [Start MJD], [StartLoc], [EndLoc]
+        Prints relevant scheduling info with '|' delimiter.
+            [ProjID] | [SessID] | [Start MJD] | [StartLoc] | [EndLoc]
         By default, only future sessions are printed (all=False) with the latest date
         on top (reverse=True).
         """
 
-        self.GetCSVLines()
+        self.GetDefLines()
 
         if not all:
             FutureInds = np.where(self.StartUTC > Time.now())
-            OutLines = self.CSVLines[FutureInds]
+            OutLines = self.DefLines[FutureInds]
         else:
-            OutLines = self.CSVLines
+            OutLines = self.DefLines
         if reverse:
             [print(cl) for cl in np.flip(OutLines)]
         else:
@@ -250,7 +254,8 @@ class Sched:
 
     def GetGBNCCLines(self):
         """
-        Blah...
+        Lines suitable for copying directly to obs sign-up. E.g.
+            2020 Aug 23 (5.00h) -- ??
         """
 
         self.GBNCCLines = []
@@ -265,7 +270,7 @@ class Sched:
 
     def PrintGBNCC(self, all=False, reverse=True):
         """
-        blah...
+        Print desired GBNCC sched lines. 
         """
 
         self.GetGBNCCLines()
@@ -282,17 +287,9 @@ class Sched:
             [print(wl) for wl in OutLines]
 
 
-def get_session(id):
-    sess_str = obscode_dict[str(int(id) % 11)]
-    return sess_str
-
-
 def ValidProjID(ProjID):
     """
     Check input project ID, determine validity, raise exception if necessary.
-    Until default behavior for www.naic.edu/~arun/cgi-bin/schedrawd.cgi is
-    updated, 'validity' of input ProjID will rely on whether or not it's supported.
-
     List of supported projects now contained in SupportedProjIDs.list.
     """
     SupportedProjIDs = np.loadtxt("SupportedProjIDs.list", dtype="str")
@@ -314,8 +311,10 @@ def DetermineTelescope(ProjID):
     return telescope
 
 
-def ScrapeSchedGBO(project, year):
-
+def ScrapeGBO(project, year):
+    """
+    [docstring]
+    """
     page = requests.get("https://dss.gb.nrao.edu/schedule/public")
     soup = BeautifulSoup(page.content, "html.parser")
     table = soup.findChildren("table")[1]
@@ -375,7 +374,7 @@ def ScrapeSchedGBO(project, year):
     return SchedTable
 
 
-def ScrapeSchedAO(project, year):
+def ScrapeAO(project, year):
     proj = project.lower()
     PROJ = project.upper()
     yr = year[-2:]
@@ -537,9 +536,9 @@ def main():
             Telescope = DetermineTelescope(p)
 
             if Telescope == "GBT":
-                SchedTables.append(ScrapeSchedGBO(p, args.year))
+                SchedTables.append(ScrapeGBO(p, args.year))
             elif Telescope == "AO":
-                SchedTables.append(ScrapeSchedAO(p, args.year))
+                SchedTables.append(ScrapeAO(p, args.year))
         else:
             print("Invalid project: %s" % (p))
             print(

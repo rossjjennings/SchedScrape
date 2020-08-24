@@ -332,6 +332,7 @@ def ScrapeGBO(project, year):
     StartList = []
     EndList = []
     WrapList = []
+    start = None
     for rr in table.findChildren("tr"):
         if not rr.a:
             date_str = rr.contents[1].text.split()[0]
@@ -345,8 +346,8 @@ def ScrapeGBO(project, year):
 
                 obs_elems = rr.findChildren("td")
                 time_window = obs_elems[0].text.strip()
-                start_et_str = time_window.split(" - ")[0].strip()  # .replace('+','')
-                end_et_str = time_window.split(" - ")[1].strip()  # .replace('+','')
+                start_et_str = time_window.split(" - ")[0].strip()
+                end_et_str = time_window.split(" - ")[1].strip()
 
                 if "+" in end_et_str:
                     start = "%s %s" % (date_str, start_et_str.replace("+", ""))
@@ -354,6 +355,7 @@ def ScrapeGBO(project, year):
                     if "+" in start_et_str:
                         end = "%s %s" % (date_str, end_et_str.replace("+", ""))
                         wrap = 1
+                        if not start: continue  # Handles day wrap at start of DSS sched (skip it!).
                     else:
                         start = "%s %s" % (date_str, start_et_str)
                         end = "%s %s" % (date_str, end_et_str)

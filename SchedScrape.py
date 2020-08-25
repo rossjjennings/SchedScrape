@@ -107,6 +107,8 @@ class Sched:
         self.GBNCCLines = None
 
         self.TranslateSess()
+        #self.GetDurations()
+        self.MergeAdjacent()
         self.ConvertObsTimes()
         # MERGE HERE!...
 
@@ -123,8 +125,33 @@ class Sched:
     def MergeAdjacent(self):
         """
         Merge sched lines that are obviously consecutive, same session.
+        Will eventually want special rules for P2945.
         """
-        pass
+        ObsByPS = self.Table.group_by(['ProjID','SessID'])
+        TempTable = None
+        
+        nmerge = 0
+        for g in ObsByPS.groups:
+
+            i = 0
+            while i < len(g)-1:
+                e0 = g['EndLoc'][i]
+                s1 = g['StartLoc'][i + 1]
+                if e0 == s1:
+                    g['EndLoc'][i] = g['EndLoc'][i + 1]
+                    g.remove_row(i + 1)
+                    nmerge+=1
+                else:
+                    i+=1
+
+            if not TempTable:
+                TempTable = g
+            else:
+                TempTable = vstack([TempTable,g])
+
+        #print('Merged %s rows...' % (nmerge))
+        self.Table = TempTable
+        self.nRows = len(self.Table)
 
     def TranslateSess(self):
         """
@@ -164,22 +191,21 @@ class Sched:
         UTC = pytz.utc
 
         # UTC
-        self.StartUTC = np.array([sl.astimezone(UTC) for sl in self.StartLoc])
+        self.StartUTC = np.array([sl.astimezone(UTC) for sl in self.Table['StartLoc']])
         self.Table['StartUTC'] = self.StartUTC
-        self.EndUTC = np.array([el.astimezone(UTC) for el in self.EndLoc])
+        self.EndUTC = np.array([el.astimezone(UTC) for el in self.Table['EndLoc']])
         self.Table['EndUTC'] = self.EndUTC
 
         # MJD
-        self.StartMJD = np.array([Time(ut).mjd for ut in self.StartUTC])
+        self.StartMJD = np.array([Time(ut).mjd for ut in self.Table['StartUTC']])
         self.Table['StartMJD'] = self.StartMJD
-        self.EndMJD = np.array([Time(ut).mjd for ut in self.EndUTC])
+        self.EndMJD = np.array([Time(ut).mjd for ut in self.Table['EndUTC']])
         self.Table['EndMJD'] = self.EndMJD
 
         # LST?
         # Later...
 
-        # Calculate durations
-        dt = self.EndUTC - self.StartUTC
+        dt = self.Table['EndUTC'] - self.Table['StartUTC']
         self.Duration = np.array([TimeDelta(t).to(u.hour).value for t in dt])
         self.Table['Duration'] = self.Duration
 

@@ -205,9 +205,11 @@ class Sched:
         self.Table["EndMJD"] = self.EndMJD
 
         # LST?
-        # Later...NEED TELESCOPE IN THE TABLE
-        # TimeLoc = np.array([Time(su,location=scopes[telescope]) for su in self.Table['StartUTC']])
-        # start_LST  = TimeLoc.sidereal_time('mean')
+        # Probably need quantity table in order to store actual LST objects (just hour here)
+        TimeLocStart = np.array([Time(su,location=observatories[obs]) for su,obs in zip(self.Table['StartUTC'],self.Table['Observatory'])])
+        TimeLocEnd = np.array([Time(eu,location=observatories[obs]) for eu,obs in zip(self.Table['EndUTC'],self.Table['Observatory'])])
+        self.Table['StartLSTHr'] = np.array([tls.sidereal_time('mean').hour for tls in TimeLocStart])
+        self.Table['EndLSTHr'] = np.array([tle.sidereal_time('mean').hour for tle in TimeLocEnd])
 
         dt = self.Table["EndUTC"] - self.Table["StartUTC"]
         self.Duration = np.array([TimeDelta(t).to(u.hour).value for t in dt])
@@ -591,8 +593,7 @@ def main():
 
     FullSched = vstack(SchedTables)
     x = Sched(FullSched)
-    print(x.Table["Observatory"])
-    # x.PrintText(args.printformat,all=args.all,reverse=args.reverse)
+    x.PrintText(args.printformat,all=args.all,reverse=args.reverse)
 
 
 if __name__ == "__main__":

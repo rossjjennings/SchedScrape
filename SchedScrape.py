@@ -117,13 +117,12 @@ class Sched:
         self.GBNCCLines = None
 
         self.TranslateSess()
-        # self.GetDurations()
         self.MergeAdjacent()
         self.ConvertObsTimes()
 
         # Sort merged Sched.Table rows
         self.Table.sort(keys=["StartMJD"])
-
+        
     def MergeAdjacent(self):
         """
         Merge sched lines that are obviously consecutive, same session.
@@ -580,10 +579,19 @@ def main():
         if ValidProjID(p):
             Telescope = DetermineTelescope(p)
 
+            # Only instantiate Sched objects if scraper returns sessions.
             if Telescope == "GBT":
-                SchedTables.append(ScrapeGBO(p, args.year))
+                st = ScrapeGBO(p, args.year)
+                if len(st): SchedTables.append(st)
             elif Telescope == "AO":
-                SchedTables.append(ScrapeAO(p, args.year))
+                st = ScrapeAO(p, args.year)
+                if len(st): SchedTables.append(st)
+            else:
+                print('Telescope not supported: %s' % (Telescope))
+                sys.exit()
+
+            if not len(st): print('No sessions matching project(s) found: %s' % (p))
+
         else:
             print("Invalid project: %s" % (p))
             print(

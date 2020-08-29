@@ -210,14 +210,21 @@ class Sched:
 
     def GetWikiLines(self):
         """For example:
+        AO (or anything else)
         2020 Jul 12: 21:15 - Jul 13: 06:30: P2780 (Session C): <br>
         2020 Jul 12: 04:30 - 06:30: P2945 (2317,0030): <br>
         2020 Jul 12: 02:00 - 03:00: P2945 (2043): <br>
         2020 Jul 11: 08:45 - 15:30: P2780 (Session D): <br>
+
+        GBO
+        2020 Aug 21 21:30--22:30 F-1400: <br>
+        2020 Aug 14 23:45--00:45 F-1400: <br>
+        2020 Aug 06 20:00--01:30 E-820: <br>
+        2020 Aug 05 22:45--04:15 E-1400: <br>
         """
 
         self.WikiLines = []
-        for i, (st, et) in enumerate(zip(self.Table["StartLoc"], self.Table["EndLoc"])):
+        for i, (st, et, tel) in enumerate(zip(self.Table["StartLoc"], self.Table["EndLoc"], self.Table["Observatory"])):
             WikiStart = datetime.strftime(st, "%Y %b %d: %H:%M")
 
             # Check for session spanning multiple columns (days)
@@ -228,13 +235,22 @@ class Sched:
             else:
                 WikiEnd = datetime.strftime(et, "%b %d: %H:%M")
 
-            WikiLine = "%s - %s: %s (%s): <br>" % (
-                WikiStart,
-                WikiEnd,
-                self.Table["ProjID"][i],
-                self.Table["SessID"][i],
-            )
-            self.WikiLines.append(WikiLine)
+            if tel == "GBO":
+                WikiLine = "%s--%s %s: <br>" % (
+                    WikiStart,
+                    WikiEnd,
+                    self.Table["SessID"][i],
+                )
+                self.WikiLines.append(WikiLine)
+
+            else:
+                WikiLine = "%s - %s: %s (%s): <br>" % (
+                    WikiStart,
+                    WikiEnd,
+                    self.Table["ProjID"][i],
+                    self.Table["SessID"][i],
+                )
+                self.WikiLines.append(WikiLine)
 
         self.WikiLines = np.array(self.WikiLines)
         self.Table["OutText"] = self.WikiLines

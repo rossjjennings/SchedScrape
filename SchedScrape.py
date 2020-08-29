@@ -51,12 +51,6 @@ obscode_dict = {
     "10": "E-820",
 }
 
-
-def GetSession(sid):
-    sess_str = obscode_dict[str(int(sid) % 11)]
-    return SessStr
-
-
 def FixProj(pid):
     """
     Make code more robust to handling ProjIDs with capitalization or delimiter issues.
@@ -167,8 +161,8 @@ class Sched:
                 self.SessID.append(aoDictP2780[rsid])
             elif "2945" in pid:
                 self.SessID.append(aoDictP2945[rsid])
-            elif "20B-307" in pid:
-                pass
+            elif TestNANOGravGBO(pid):
+                self.SessID.append(GetSession(rsid))
             else:
                 try:
                     self.SessID.append(aoDictP2780[rsid])
@@ -322,6 +316,23 @@ class Sched:
         else:
             [print(wl) for wl in OutLines]
 
+
+def GetSession(sid):
+    SessStr = obscode_dict[str(int(sid) % 11)]
+    return SessStr
+
+def TestNANOGravGBO(ProjID):
+    """
+    Doot.
+    """
+    NANOGravProjIDs = np.array([
+        'GBT18B-226',
+        'GBT20A-998',
+        'GBT20B-307',
+        'GBT20B-997',
+    ])
+
+    return np.any(ProjID in NANOGravProjIDs)
 
 def ValidProjID(ProjID):
     """

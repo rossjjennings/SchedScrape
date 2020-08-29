@@ -12,6 +12,13 @@ from astropy import log
 import pytz
 from datetime import datetime, timedelta
 import argparse
+from astropy.coordinates import SkyCoord, EarthLocation, AltAz
+
+observatories = {
+    "GBO": EarthLocation(lat=38.4330555556 * u.deg, lon=-79.8397222222 * u.deg),
+    "AO": EarthLocation(lat=18.3441666667 * u.deg, lon=-66.7527777778 * u.deg),
+    "GMRT": EarthLocation(lat=19.0963888889 * u.deg, lon=+74.0497222222 * u.deg),
+}
 
 aoDictP2780 = {
     "(a)": "Session A",
@@ -44,9 +51,11 @@ obscode_dict = {
     "10": "E-820",
 }
 
+
 def GetSession(sid):
     sess_str = obscode_dict[str(int(sid) % 11)]
     return SessStr
+
 
 def FixProj(pid):
     """
@@ -55,12 +64,12 @@ def FixProj(pid):
     TempPidCap = pid
     pid = pid.upper()
     if pid != TempPidCap:
-        log.warning('Capitalizing ProjID: %s -> %s' % (TempPidCap,pid))
+        log.warning("Capitalizing ProjID: %s -> %s" % (TempPidCap, pid))
 
-    if '_' in pid: 
+    if "_" in pid:
         TempPidHyph = pid
-        pid = pid.replace('_','-')
-        log.warning('Replacing underscore with hyphen: %s -> %s' % (TempPidHyph,pid))
+        pid = pid.replace("_", "-")
+        log.warning("Replacing underscore with hyphen: %s -> %s" % (TempPidHyph, pid))
 
     return pid
 
@@ -84,6 +93,7 @@ class Sched:
             StartLoc (observatory's local start time),
             EndLoc (local end time),
             Wraps (boolean marker for sessions that cross a day boundary).
+            Observatory (GBO, AO, etc.)
     """
 
     def __init__(self, table):
@@ -107,49 +117,41 @@ class Sched:
         self.GBNCCLines = None
 
         self.TranslateSess()
-        #self.GetDurations()
+        # self.GetDurations()
         self.MergeAdjacent()
         self.ConvertObsTimes()
-        # MERGE HERE!...
 
         # Sort merged Sched.Table rows
-        self.Table.sort(keys=['StartMJD'])
-
-    # Not sure this is necessary...
-    def GetObservatories(self):
-        """
-        Use project codes to determine corresponding observatory.
-        """
-        pass
+        self.Table.sort(keys=["StartMJD"])
 
     def MergeAdjacent(self):
         """
         Merge sched lines that are obviously consecutive, same session.
         Will eventually want special rules for P2945.
         """
-        ObsByPS = self.Table.group_by(['ProjID','SessID'])
+        ObsByPS = self.Table.group_by(["ProjID", "SessID"])
         TempTable = None
-        
+
         nmerge = 0
         for g in ObsByPS.groups:
 
             i = 0
-            while i < len(g)-1:
-                e0 = g['EndLoc'][i]
-                s1 = g['StartLoc'][i + 1]
+            while i < len(g) - 1:
+                e0 = g["EndLoc"][i]
+                s1 = g["StartLoc"][i + 1]
                 if e0 == s1:
-                    g['EndLoc'][i] = g['EndLoc'][i + 1]
+                    g["EndLoc"][i] = g["EndLoc"][i + 1]
                     g.remove_row(i + 1)
-                    nmerge+=1
+                    nmerge += 1
                 else:
-                    i+=1
+                    i += 1
 
             if not TempTable:
                 TempTable = g
             else:
-                TempTable = vstack([TempTable,g])
+                TempTable = vstack([TempTable, g])
 
-        #print('Merged %s rows...' % (nmerge))
+        # print('Merged %s rows...' % (nmerge))
         self.Table = TempTable
         self.nRows = len(self.Table)
 
@@ -160,7 +162,7 @@ class Sched:
         """
 
         self.SessID = []
-        for pid, rsid in zip(self.Table['ProjID'],self.Table['RawSessID']):
+        for pid, rsid in zip(self.Table["ProjID"], self.Table["RawSessID"]):
 
             if "2780" in pid:
                 self.SessID.append(aoDictP2780[rsid])
@@ -181,7 +183,7 @@ class Sched:
                     print("Blurgh. Something else happened.")
 
         self.SessID = np.array(self.SessID)
-        self.Table['SessID'] = self.SessID
+        self.Table["SessID"] = self.SessID
 
     def ConvertObsTimes(self):
         """
@@ -191,23 +193,25 @@ class Sched:
         UTC = pytz.utc
 
         # UTC
-        self.StartUTC = np.array([sl.astimezone(UTC) for sl in self.Table['StartLoc']])
-        self.Table['StartUTC'] = self.StartUTC
-        self.EndUTC = np.array([el.astimezone(UTC) for el in self.Table['EndLoc']])
-        self.Table['EndUTC'] = self.EndUTC
+        self.StartUTC = np.array([sl.astimezone(UTC) for sl in self.Table["StartLoc"]])
+        self.Table["StartUTC"] = self.StartUTC
+        self.EndUTC = np.array([el.astimezone(UTC) for el in self.Table["EndLoc"]])
+        self.Table["EndUTC"] = self.EndUTC
 
         # MJD
-        self.StartMJD = np.array([Time(ut).mjd for ut in self.Table['StartUTC']])
-        self.Table['StartMJD'] = self.StartMJD
-        self.EndMJD = np.array([Time(ut).mjd for ut in self.Table['EndUTC']])
-        self.Table['EndMJD'] = self.EndMJD
+        self.StartMJD = np.array([Time(ut).mjd for ut in self.Table["StartUTC"]])
+        self.Table["StartMJD"] = self.StartMJD
+        self.EndMJD = np.array([Time(ut).mjd for ut in self.Table["EndUTC"]])
+        self.Table["EndMJD"] = self.EndMJD
 
         # LST?
-        # Later...
+        # Later...NEED TELESCOPE IN THE TABLE
+        # TimeLoc = np.array([Time(su,location=scopes[telescope]) for su in self.Table['StartUTC']])
+        # start_LST  = TimeLoc.sidereal_time('mean')
 
-        dt = self.Table['EndUTC'] - self.Table['StartUTC']
+        dt = self.Table["EndUTC"] - self.Table["StartUTC"]
         self.Duration = np.array([TimeDelta(t).to(u.hour).value for t in dt])
-        self.Table['Duration'] = self.Duration
+        self.Table["Duration"] = self.Duration
 
     def GetWikiLines(self):
         """For example:
@@ -218,13 +222,13 @@ class Sched:
         """
 
         self.WikiLines = []
-        for i, (st, et) in enumerate(zip(self.Table['StartLoc'],self.Table['EndLoc'])):
+        for i, (st, et) in enumerate(zip(self.Table["StartLoc"], self.Table["EndLoc"])):
             WikiStart = datetime.strftime(st, "%Y %b %d: %H:%M")
 
             # Check for session spanning multiple columns (days)
             # if datetime.strftime(st,'%d') == datetime.strftime(et,'%d'):
             # FIX! Do not need "Wraps" info for this.
-            if not self.Table['Wraps'][i]:
+            if not self.Table["Wraps"][i]:
                 WikiEnd = datetime.strftime(et, "%H:%M")
             else:
                 WikiEnd = datetime.strftime(et, "%b %d: %H:%M")
@@ -232,16 +236,16 @@ class Sched:
             WikiLine = "%s - %s: %s (%s): <br>" % (
                 WikiStart,
                 WikiEnd,
-                self.Table['ProjID'][i],
-                self.Table['SessID'][i],
+                self.Table["ProjID"][i],
+                self.Table["SessID"][i],
             )
             self.WikiLines.append(WikiLine)
 
         self.WikiLines = np.array(self.WikiLines)
-        self.Table['OutText'] = self.WikiLines
+        self.Table["OutText"] = self.WikiLines
 
     def GetDefLines(self):
-        """For example:
+        """Default; for example:
         P2945 | 1713 | 59050.05 | 2020-07-19 21:15:00-04:00 | 2020-07-19 22:15:00-04:00
         P2945 | 2043 | 59052.21 | 2020-07-22 01:00:00-04:00 | 2020-07-22 02:00:00-04:00
         P2945 | 2317,0030 | 59056.29 | 2020-07-26 03:00:00-04:00 | 2020-07-26 04:45:00-04:00
@@ -251,16 +255,16 @@ class Sched:
         self.DefLines = []
         for i in range(self.nRows):
             DefLine = "%s | %s | %.2f | %s | %s" % (
-                self.Table['ProjID'][i],
-                self.Table['SessID'][i],
-                self.Table['StartMJD'][i],
-                self.Table['StartLoc'][i],
-                self.Table['EndLoc'][i],
+                self.Table["ProjID"][i],
+                self.Table["SessID"][i],
+                self.Table["StartMJD"][i],
+                self.Table["StartLoc"][i],
+                self.Table["EndLoc"][i],
             )
             self.DefLines.append(DefLine)
 
         self.DefLines = np.array(self.DefLines)
-        self.Table['OutText'] = self.DefLines
+        self.Table["OutText"] = self.DefLines
 
     def GetGBNCCLines(self):
         """For example:
@@ -274,13 +278,13 @@ class Sched:
         self.GBNCCLines = []
         for i in range(self.nRows):
             GBNCCLine = "%s (%.2fh) -- ??" % (
-                datetime.strftime(self.Table['StartLoc'][i], "%Y %b %d: %H:%M"),
-                self.Table['Duration'][i],
+                datetime.strftime(self.Table["StartLoc"][i], "%Y %b %d: %H:%M"),
+                self.Table["Duration"][i],
             )
             self.GBNCCLines.append(GBNCCLine)
 
         self.GBNCCLines = np.array(self.GBNCCLines)
-        self.Table['OutText'] = self.GBNCCLines
+        self.Table["OutText"] = self.GBNCCLines
 
     def PrintText(self, LineType, all=False, reverse=True):
         """
@@ -296,21 +300,21 @@ class Sched:
             2020 Aug 23: 23:15 (4.00h) -- ?? 
         """
 
-        if LineType == 'default':
+        if LineType == "default":
             self.GetDefLines()
-        elif LineType == 'wiki':
+        elif LineType == "wiki":
             self.GetWikiLines()
-        elif LineType == 'gbncc':
+        elif LineType == "gbncc":
             self.GetGBNCCLines()
         else:
-            log.error('LineType %s not recognized.' % (LineType))
+            log.error("LineType %s not recognized." % (LineType))
             sys.exit()
 
         if not all:
-            FutureInds = np.where(self.Table['StartUTC'] > Time.now())
-            OutLines = self.Table['OutText'][FutureInds]
+            FutureInds = np.where(self.Table["StartUTC"] > Time.now())
+            OutLines = self.Table["OutText"][FutureInds]
         else:
-            OutLines = self.Table['OutText'] 
+            OutLines = self.Table["OutText"]
 
         if reverse:
             [print(cl) for cl in np.flip(OutLines)]
@@ -381,7 +385,8 @@ def ScrapeGBO(project, year):
                     if "+" in start_et_str:
                         end = "%s %s" % (date_str, end_et_str.replace("+", ""))
                         wrap = 1
-                        if not start: continue  # Handles day wrap at start of DSS sched (skip it!).
+                        if not start:
+                            continue  # Handles day wrap at start of DSS sched (skip it!).
                     else:
                         start = "%s %s" % (date_str, start_et_str)
                         end = "%s %s" % (date_str, end_et_str)
@@ -403,6 +408,8 @@ def ScrapeGBO(project, year):
     SortTag = np.array([int(datetime.strftime(st, "%Y%m%d%H%M")) for st in StartList])
     SchedTable["Tags"] = SortTag
     SchedTable.sort(keys=["Tags"])
+
+    SchedTable["Observatory"] = np.array(["GBO"] * len(SchedTable))
 
     return SchedTable
 
@@ -516,6 +523,8 @@ def ScrapeAO(project, year):
 
     SchedTable.remove_rows(RemoveRows)
 
+    SchedTable["Observatory"] = np.array(["AO"] * len(SchedTable))
+
     return SchedTable
 
 
@@ -582,7 +591,8 @@ def main():
 
     FullSched = vstack(SchedTables)
     x = Sched(FullSched)
-    x.PrintText(args.printformat,all=args.all,reverse=args.reverse)
+    print(x.Table["Observatory"])
+    # x.PrintText(args.printformat,all=args.all,reverse=args.reverse)
 
 
 if __name__ == "__main__":

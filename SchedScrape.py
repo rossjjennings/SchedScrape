@@ -380,7 +380,8 @@ def ScrapeGBO(project, year):
     """
     page = requests.get("https://dss.gb.nrao.edu/schedule/public")
     soup = BeautifulSoup(page.content, "html.parser")
-    table = soup.findChildren("table")[1]
+    # Something on the web changed so index 1 -> 0. Need to test for things like this...
+    table = soup.findChildren("table")[0]
 
     # Calculate local AO start/end times from SchedTable
     GBO = pytz.timezone("US/Eastern")
@@ -395,6 +396,7 @@ def ScrapeGBO(project, year):
         if not rr.a:
             date_str = rr.contents[1].text.split()[0]
         else:
+            
             proj_str = rr.a["title"]
 
             if project in proj_str:
@@ -626,7 +628,12 @@ def main():
             )
             sys.exit()
 
-    FullSched = vstack(SchedTables)
+    # Handle potential for no upcoming sessions.
+    if not SchedTables:
+        exit()
+    else:
+        FullSched = vstack(SchedTables)
+        
     x = Sched(FullSched)
     x.PrintText(args.printformat,all=args.all,reverse=args.reverse)
 

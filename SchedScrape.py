@@ -51,6 +51,7 @@ obscode_dict = {
     "10": "E-820",
 }
 
+
 def FixProj(pid):
     """
     Make code more robust to handling ProjIDs with capitalization or delimiter issues.
@@ -116,7 +117,7 @@ class Sched:
 
         # Sort merged Sched.Table rows
         self.Table.sort(keys=["StartMJD"])
-        
+
     def MergeAdjacent(self):
         """
         Merge sched lines that are obviously consecutive, same session.
@@ -199,10 +200,24 @@ class Sched:
 
         # LST?
         # Probably need quantity table in order to store actual LST objects (just hour here)
-        TimeLocStart = np.array([Time(su,location=observatories[obs]) for su,obs in zip(self.Table['StartUTC'],self.Table['Observatory'])])
-        TimeLocEnd = np.array([Time(eu,location=observatories[obs]) for eu,obs in zip(self.Table['EndUTC'],self.Table['Observatory'])])
-        self.Table['StartLSTHr'] = np.array([tls.sidereal_time('mean').hour for tls in TimeLocStart])
-        self.Table['EndLSTHr'] = np.array([tle.sidereal_time('mean').hour for tle in TimeLocEnd])
+        TimeLocStart = np.array(
+            [
+                Time(su, location=observatories[obs])
+                for su, obs in zip(self.Table["StartUTC"], self.Table["Observatory"])
+            ]
+        )
+        TimeLocEnd = np.array(
+            [
+                Time(eu, location=observatories[obs])
+                for eu, obs in zip(self.Table["EndUTC"], self.Table["Observatory"])
+            ]
+        )
+        self.Table["StartLSTHr"] = np.array(
+            [tls.sidereal_time("mean").hour for tls in TimeLocStart]
+        )
+        self.Table["EndLSTHr"] = np.array(
+            [tle.sidereal_time("mean").hour for tle in TimeLocEnd]
+        )
 
         dt = self.Table["EndUTC"] - self.Table["StartUTC"]
         self.Duration = np.array([TimeDelta(t).to(u.hour).value for t in dt])
@@ -224,7 +239,9 @@ class Sched:
         """
 
         self.WikiLines = []
-        for i, (st, et, tel) in enumerate(zip(self.Table["StartLoc"], self.Table["EndLoc"], self.Table["Observatory"])):
+        for i, (st, et, tel) in enumerate(
+            zip(self.Table["StartLoc"], self.Table["EndLoc"], self.Table["Observatory"])
+        ):
             WikiStart = datetime.strftime(st, "%Y %b %d: %H:%M")
 
             # Check for session spanning multiple columns (days)
@@ -337,18 +354,17 @@ def GetSession(sid):
     SessStr = obscode_dict[str(int(sid) % 11)]
     return SessStr
 
+
 def TestNANOGravGBO(ProjID):
     """
     Doot.
     """
-    NANOGravProjIDs = np.array([
-        'GBT18B-226',
-        'GBT20A-998',
-        'GBT20B-307',
-        'GBT20B-997',
-    ])
+    NANOGravProjIDs = np.array(
+        ["GBT18B-226", "GBT20A-998", "GBT20B-307", "GBT20B-997",]
+    )
 
     return np.any(ProjID in NANOGravProjIDs)
+
 
 def ValidProjID(ProjID):
     """
@@ -396,7 +412,7 @@ def ScrapeGBO(project, year):
         if not rr.a:
             date_str = rr.contents[1].text.split()[0]
         else:
-            
+
             proj_str = rr.a["title"]
 
             if project in proj_str:
@@ -558,6 +574,23 @@ def ScrapeAO(project, year):
     return SchedTable
 
 
+def CheckShortcuts(ProjList):
+    """
+    NGGB = current NANOGrav Green Bank codes
+    NGAO = current NANOGrav Arecibo Observatory codes
+    """
+    if ProjList == ["NGGB"]:
+        ProjList = ["GBT20B-307", "GBT20B-997"]
+        print("Using shortcut: NGGB -> GBT20B-307,GBT20B-997")
+    elif ProjList == ["NGAO"]:
+        ProjList = ["P2780", "P2945"]
+        print("Using shortcut: NGAO -> P2780,P2945")
+    else:
+        pass
+
+    return ProjList
+
+
 def main():
 
     parser = argparse.ArgumentParser(
@@ -600,6 +633,7 @@ def main():
 
     args = parser.parse_args()
     projects = [str(item) for item in args.projects[0].split(",")]
+    projects = CheckShortcuts(projects)
 
     SchedTables = []
     for p in projects:
@@ -611,15 +645,18 @@ def main():
             # Only instantiate Sched objects if scraper returns sessions.
             if Telescope == "GBT":
                 st = ScrapeGBO(p, args.year)
-                if len(st): SchedTables.append(st)
+                if len(st):
+                    SchedTables.append(st)
             elif Telescope == "AO":
                 st = ScrapeAO(p, args.year)
-                if len(st): SchedTables.append(st)
+                if len(st):
+                    SchedTables.append(st)
             else:
-                print('Telescope not supported: %s' % (Telescope))
+                print("Telescope not supported: %s" % (Telescope))
                 sys.exit()
 
-            if not len(st): print('No sessions matching project(s) found: %s' % (p))
+            if not len(st):
+                print("No sessions matching project(s) found: %s" % (p))
 
         else:
             print("Invalid project: %s" % (p))
@@ -633,9 +670,9 @@ def main():
         exit()
     else:
         FullSched = vstack(SchedTables)
-        
+
     x = Sched(FullSched)
-    x.PrintText(args.printformat,all=args.all,reverse=args.reverse)
+    x.PrintText(args.printformat, all=args.all, reverse=args.reverse)
 
 
 if __name__ == "__main__":

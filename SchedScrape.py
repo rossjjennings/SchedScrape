@@ -360,7 +360,7 @@ def TestNANOGravGBO(ProjID):
     Doot.
     """
     NANOGravProjIDs = np.array(
-        ["GBT18B-226", "GBT20A-998", "GBT20B-307", "GBT20B-997",]
+        ["GBT18B-226", "GBT20A-998", "GBT20B-307", "GBT20B-997", "GBT21A-997"]
     )
 
     return np.any(ProjID in NANOGravProjIDs)

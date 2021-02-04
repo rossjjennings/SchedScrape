@@ -314,7 +314,7 @@ class Sched:
         self.GBNCCLines = np.array(self.GBNCCLines)
         self.Table["OutText"] = self.GBNCCLines
 
-    def PrintText(self, LineType, all=False, reverse=True):
+    def PrintText(self, LineType, all=False, invert=False):
         """
         Print desired sched lines with desired formatting/sorting applied.
 
@@ -344,7 +344,10 @@ class Sched:
         else:
             OutLines = self.Table["OutText"]
 
-        if reverse:
+        # Cludge: by default, print in descending order (latest = first)
+        OutLines = np.flip(OutLines)
+
+        if invert:
             [print(cl) for cl in np.flip(OutLines)]
         else:
             [print(wl) for wl in OutLines]
@@ -615,7 +618,7 @@ def main():
         help="Print all sessions in the chosen year.",
     )
     parser.add_argument(
-        "--reverse", "-r", action="store_true", help="Print sessions in reverse order."
+        "--invert", "-i", action="store_true", help="Invert order in which sessions are printed."
     )
     parser.add_argument(
         "--printformat",
@@ -672,7 +675,7 @@ def main():
         FullSched = vstack(SchedTables)
 
     x = Sched(FullSched)
-    x.PrintText(args.printformat, all=args.all, reverse=args.reverse)
+    x.PrintText(args.printformat, all=args.all, invert=args.invert)
 
 
 if __name__ == "__main__":

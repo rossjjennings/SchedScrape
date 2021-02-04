@@ -314,6 +314,50 @@ class Sched:
         self.GBNCCLines = np.array(self.GBNCCLines)
         self.Table["OutText"] = self.GBNCCLines
 
+    def GetGBTOpsLines(self):
+        """For example:
+        2020 Dec 31: 05:45--11:30: fcal-VEGAS_820, A-VEGAS_820
+        2020 Dec 31: 11:30--14:30: B-VEGAS_820
+        2020 Dec 31: 18:45--21:45: C-VEGAS_1400
+        2020 Dec 31: 21:45--Jan 01: 02:15 D-VEGAS_1400
+        2021 Jan 01: 06:15--11:45: fcal-VEGAS_1400, A-VEGAS_1400
+        """
+
+        self.GBTOpsLines = []
+        for i, (st, et, tel) in enumerate(
+            zip(self.Table["StartLoc"], self.Table["EndLoc"], self.Table["Observatory"])
+        ):
+            GBTOpsStart = datetime.strftime(st, "%Y %b %d: %H:%M")
+
+            # Check for session spanning multiple columns (days)
+            # if datetime.strftime(st,'%d') == datetime.strftime(et,'%d'):
+            # FIX! Do not need "Wraps" info for this.
+            if not self.Table["Wraps"][i]:
+                GBTOpsEnd = datetime.strftime(et, "%H:%M")
+            else:
+                GBTOpsEnd = datetime.strftime(et, "%b %d: %H:%M")
+
+            if tel == "GBO":
+                # Determine sched block(s)
+                ObsBlock,ObsFreq = self.Table["SessID"][i].split('-')
+                SchedBlock = f"{ObsBlock}-VEGAS_{ObsFreq}"
+                if ObsBlock == "A":
+                    SchedBlock = f"fcal-VEGAS_{ObsFreq}, {SchedBlock}"
+
+                GBTOpsLine = "%s--%s: %s" % (
+                    GBTOpsStart,
+                    GBTOpsEnd,
+                    SchedBlock,
+                )
+                self.GBTOpsLines.append(GBTOpsLine)
+
+            else:
+                print("Use a different printformat!!")
+                exit()
+
+        self.GBTOpsLines = np.array(self.GBTOpsLines)
+        self.Table["OutText"] = self.GBTOpsLines
+
     def PrintText(self, LineType, all=False, invert=False):
         """
         Print desired sched lines with desired formatting/sorting applied.
@@ -334,6 +378,9 @@ class Sched:
             self.GetWikiLines()
         elif LineType == "gbncc":
             self.GetGBNCCLines()
+        elif LineType == "gbtops":
+            invert = True
+            self.GetGBTOpsLines()
         else:
             log.error("LineType %s not recognized." % (LineType))
             sys.exit()
@@ -623,7 +670,7 @@ def main():
     parser.add_argument(
         "--printformat",
         "-pf",
-        choices=["wiki", "none", "gbncc", "default"],
+        choices=["wiki", "none", "gbncc", "gbtops", "default"],
         nargs="?",
         default="default",
         help="Format of schedule info printed.",

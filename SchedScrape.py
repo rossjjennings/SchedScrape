@@ -51,6 +51,13 @@ obscode_dict = {
     "10": "E-820",
 }
 
+obscode_ddt_dict = {
+    "1": "A-1400",
+    "2": "B-1400",
+    "3": "C-1400",
+    "4": "D-1400",
+}
+
 
 def FixProj(pid):
     """
@@ -163,7 +170,7 @@ class Sched:
             elif "2945" in pid:
                 self.SessID.append(aoDictP2945[rsid])
             elif TestNANOGravGBO(pid):
-                self.SessID.append(GetSession(rsid))
+                self.SessID.append(GetSession(pid,rsid))
             else:
                 try:
                     self.SessID.append(aoDictP2780[rsid])
@@ -400,9 +407,13 @@ class Sched:
             [print(wl) for wl in OutLines]
 
 # sid range changed 3/2/21, so a better fix is needed to make this work consistently
-def GetSession(sid):
-    # SessStr = obscode_dict[str(int(sid) % 11)] # pre-3/2
-    SessStr = obscode_dict[str((int(sid)-4) % 11)]
+# added pid arg 3/10/21 to handle new DDT
+def GetSession(pid,sid):
+    if pid == "GBT21A-399":
+        SessStr = obscode_ddt_dict[str(int(sid))] 
+    else:
+        # SessStr = obscode_dict[str(int(sid) % 11)] # pre-3/2
+        SessStr = obscode_dict[str((int(sid)-4) % 11)]
     return SessStr
 
 
@@ -411,7 +422,7 @@ def TestNANOGravGBO(ProjID):
     Doot.
     """
     NANOGravProjIDs = np.array(
-        ["GBT18B-226", "GBT20A-998", "GBT20B-307", "GBT20B-997", "GBT21A-997"]
+        ["GBT18B-226", "GBT20A-998", "GBT20B-307", "GBT20B-997", "GBT21A-997", "GBT21A-399"]
     )
 
     return np.any(ProjID in NANOGravProjIDs)
@@ -631,8 +642,8 @@ def CheckShortcuts(ProjList):
     NGAO = current NANOGrav Arecibo Observatory codes
     """
     if ProjList == ["NGGB"]:
-        ProjList = ["GBT20B-307", "GBT21A-997"]
-        print("Using shortcut: NGGB -> GBT20B-307,GBT20B-997")
+        ProjList = ["GBT20B-307", "GBT21A-997", "GBT21A-399"]
+        print("Using shortcut: NGGB -> GBT20B-307,GBT20B-997,GBT21A-399")
     elif ProjList == ["NGAO"]:
         ProjList = ["P2780", "P2945"]
         print("Using shortcut: NGAO -> P2780,P2945")

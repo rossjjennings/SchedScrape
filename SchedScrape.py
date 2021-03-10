@@ -399,9 +399,10 @@ class Sched:
         else:
             [print(wl) for wl in OutLines]
 
-
+# sid range changed 3/2/21, so a better fix is needed to make this work consistently
 def GetSession(sid):
-    SessStr = obscode_dict[str(int(sid) % 11)]
+    # SessStr = obscode_dict[str(int(sid) % 11)] # pre-3/2
+    SessStr = obscode_dict[str((int(sid)-4) % 11)]
     return SessStr
 
 

@@ -647,6 +647,9 @@ def CheckShortcuts(ProjList):
     elif ProjList == ["NGAO"]:
         ProjList = ["P2780", "P2945"]
         print("Using shortcut: NGAO -> P2780,P2945")
+    elif ProjList == ["GBNCC"]:
+        ProjList = ["GBT21A-367"]
+        print("Using shortcut: GBNCC -> GBT21A-367")
     else:
         pass
 

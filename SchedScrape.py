@@ -37,17 +37,19 @@ aoDictP2945 = {
     "(e)+(a)": "2317,0030",
 }
 
+# LST inclusion/exclusion windows added from DSS because of some weird
+# numbering issues lately (4/28/21).
 obscode_dict = {
-    "0": "F-1400",
-    "1": "A-1400",
+    "0": "F-1400",  # LST Inclusion: 16.50-21.50 (1 hr; this should be 11?!)
+    "1": "A-1400",  # LST Inclusion: 12.00-21.50 (5.5 hr)
     "2": "A-820",
-    "3": "B-1400",
+    "3": "B-1400",  # LST Inclusion: 16.00-22.00 (3 hr)
     "4": "B-820",
-    "5": "C-1400",
+    "5": "C-1400",  # LST Exclusion: 7.50-21.50 (3 hr)
     "6": "C-820",
-    "7": "D-1400",
+    "7": "D-1400",  # LST Inclusion: 4.00-9.50 (4.5 hr)
     "8": "D-820",
-    "9": "E-1400",
+    "9": "E-1400",  # LST Inclusion: 13.50-24.00 (5.5 hr)
     "10": "E-820",
 }
 
@@ -407,13 +409,15 @@ class Sched:
             [print(wl) for wl in OutLines]
 
 # sid range changed 3/2/21, so a better fix is needed to make this work consistently
+# previous fix was a band-aid, I think it's better now, but will need to keep an eye on it 
 # added pid arg 3/10/21 to handle new DDT
 def GetSession(pid,sid):
     if pid == "GBT21A-399":
         SessStr = obscode_ddt_dict[str(int(sid))] 
     else:
-        # SessStr = obscode_dict[str(int(sid) % 11)] # pre-3/2
-        SessStr = obscode_dict[str((int(sid)-4) % 11)]
+        #SessStr = obscode_dict[str(int(sid) % 11)] # pre-3/2
+        #SessStr = obscode_dict[str((int(sid)-4) % 11)] # pre-4/28
+        SessStr = obscode_dict[str(int(sid) % 15)]
     return SessStr
 
 

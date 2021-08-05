@@ -37,20 +37,21 @@ aoDictP2945 = {
     "(e)+(a)": "2317,0030",
 }
 
-# LST inclusion/exclusion windows added from DSS because of some weird
-# numbering issues lately (4/28/21).
+# Lots of changes, new obscode_dict for current program (8/1/21).
 obscode_dict = {
-    "0": "F-1400",  # LST Inclusion: 16.50-21.50 (1 hr; this should be 11?!)
-    "1": "A-1400",  # LST Inclusion: 12.00-21.50 (5.5 hr)
+    "1": "A-1400",  # LST Inclusion: 3.80-10.10
     "2": "A-820",
-    "3": "B-1400",  # LST Inclusion: 16.00-22.00 (3 hr)
+    "3": "B-1400",  # LST Inclusion: 11.80-22.60
     "4": "B-820",
-    "5": "C-1400",  # LST Exclusion: 7.50-21.50 (3 hr)
+    "5": "C-1400",  # LST Inclusion: 15.50-23.60
     "6": "C-820",
-    "7": "D-1400",  # LST Inclusion: 4.00-9.50 (4.5 hr)
-    "8": "D-820",
-    "9": "E-1400",  # LST Inclusion: 13.50-24.00 (5.5 hr)
-    "10": "E-820",
+    "7": "D-1400",  # LST Inclusion: 14.40-21.20
+    "8": "E-1400",  # LST Inclusion: 7.80-13.30
+    "9": "F-1400",  # LST Exclusion: 8.90-20.20
+    "10": "G-1400", # LST Inclusion: 7.20-17.70
+    "11": "H-1400", # LST Exclusion: 1.50-12.00
+    "12": "I-1400", # LST Exclusion: 3.20-14.20
+    "13": "J-1400", # LST Exclusion: 6.10-16.60
 }
 
 obscode_ddt_dict = {
@@ -410,14 +411,15 @@ class Sched:
 
 # sid range changed 3/2/21, so a better fix is needed to make this work consistently
 # previous fix was a band-aid, I think it's better now, but will need to keep an eye on it 
-# added pid arg 3/10/21 to handle new DDT
+# added pid arg 3/10/21 to handle new DDT; 
 def GetSession(pid,sid):
     if pid == "GBT21A-399":
         SessStr = obscode_ddt_dict[str(int(sid))] 
     else:
         #SessStr = obscode_dict[str(int(sid) % 11)] # pre-3/2
         #SessStr = obscode_dict[str((int(sid)-4) % 11)] # pre-4/28
-        SessStr = obscode_dict[str(int(sid) % 15)]
+        #SessStr = obscode_dict[str(int(sid) % 15)] # pre-8/1
+        SessStr = obscode_dict[str(int(sid))]
     return SessStr
 
 
@@ -426,7 +428,8 @@ def TestNANOGravGBO(ProjID):
     Doot.
     """
     NANOGravProjIDs = np.array(
-        ["GBT18B-226", "GBT20A-998", "GBT20B-307", "GBT20B-997", "GBT21A-997", "GBT21A-399"]
+        ["GBT18B-226", "GBT20A-998", "GBT20B-307", "GBT20B-997", "GBT21A-997",
+         "GBT21A-399", "GBT21B-996"]
     )
 
     return np.any(ProjID in NANOGravProjIDs)
@@ -646,8 +649,8 @@ def CheckShortcuts(ProjList):
     NGAO = current NANOGrav Arecibo Observatory codes
     """
     if ProjList == ["NGGB"]:
-        ProjList = ["GBT20B-307", "GBT21A-997", "GBT21A-399"]
-        print("Using shortcut: NGGB -> GBT20B-307,GBT20B-997,GBT21A-399")
+        ProjList = ["GBT20B-307", "GBT21A-997", "GBT21B-996", "GBT21A-399"]
+        print("Using shortcut: NGGB -> GBT20B-307,GBT20B-997,GBT21B-996,GBT21A-399")
     elif ProjList == ["NGAO"]:
         ProjList = ["P2780", "P2945"]
         print("Using shortcut: NGAO -> P2780,P2945")

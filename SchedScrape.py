@@ -174,6 +174,8 @@ class Sched:
                 self.SessID.append(aoDictP2945[rsid])
             elif TestNANOGravGBO(pid):
                 self.SessID.append(GetSession(pid,rsid))
+            elif TestGBNCC(pid):
+                self.SessID.append('')
             else:
                 try:
                     self.SessID.append(aoDictP2780[rsid])
@@ -434,6 +436,15 @@ def TestNANOGravGBO(ProjID):
 
     return np.any(ProjID in NANOGravProjIDs)
 
+def TestGBNCC(ProjID):
+    """
+    Doot.
+    """
+    GBNCCProjIDs = np.array(
+        ['GBT20B-362','GBT21A-367','GBT21B-261']
+    )
+
+    return np.any(ProjID in GBNCCProjIDs)
 
 def ValidProjID(ProjID):
     """
@@ -655,8 +666,8 @@ def CheckShortcuts(ProjList):
         ProjList = ["P2780", "P2945"]
         print("Using shortcut: NGAO -> P2780,P2945")
     elif ProjList == ["GBNCC"]:
-        ProjList = ["GBT21A-367"]
-        print("Using shortcut: GBNCC -> GBT21A-367")
+        ProjList = ["GBT21B-261"]
+        print("Using shortcut: GBNCC -> GBT21B-261")
     else:
         pass
 

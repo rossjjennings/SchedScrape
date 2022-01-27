@@ -411,6 +411,7 @@ class Sched:
         else:
             [print(wl) for wl in OutLines]
 
+# sid range changed 1/27/22, but mod 13 looks like it ought to work for now
 # sid range changed 3/2/21, so a better fix is needed to make this work consistently
 # previous fix was a band-aid, I think it's better now, but will need to keep an eye on it 
 # added pid arg 3/10/21 to handle new DDT; 
@@ -421,7 +422,7 @@ def GetSession(pid,sid):
         #SessStr = obscode_dict[str(int(sid) % 11)] # pre-3/2
         #SessStr = obscode_dict[str((int(sid)-4) % 11)] # pre-4/28
         #SessStr = obscode_dict[str(int(sid) % 15)] # pre-8/1
-        SessStr = obscode_dict[str(int(sid))]
+        SessStr = obscode_dict[str(int(sid) % 13)]
     return SessStr
 
 

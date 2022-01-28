@@ -39,6 +39,7 @@ aoDictP2945 = {
 
 # Lots of changes, new obscode_dict for current program (8/1/21).
 obscode_dict = {
+    "0": "J-1400",  # LST Exclusion: 6.10-16.60, duplicated to deal with mod
     "1": "A-1400",  # LST Inclusion: 3.80-10.10
     "2": "A-820",
     "3": "B-1400",  # LST Inclusion: 11.80-22.60

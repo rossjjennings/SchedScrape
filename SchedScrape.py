@@ -334,6 +334,8 @@ class Sched:
         2020 Dec 31: 18:45--21:45: C-VEGAS_1400
         2020 Dec 31: 21:45--Jan 01: 02:15 D-VEGAS_1400
         2021 Jan 01: 06:15--11:45: fcal-VEGAS_1400, A-VEGAS_1400
+
+        Note: as of Feb 2022, we are observing fcals with B blocks (modified below)
         """
 
         self.GBTOpsLines = []
@@ -354,7 +356,7 @@ class Sched:
                 # Determine sched block(s)
                 ObsBlock,ObsFreq = self.Table["SessID"][i].split('-')
                 SchedBlock = f"{ObsBlock}-VEGAS_{ObsFreq}"
-                if ObsBlock == "A":
+                if ObsBlock == "B":
                     SchedBlock = f"fcal-VEGAS_{ObsFreq}, {SchedBlock}"
 
                 GBTOpsLine = "%s--%s: %s" % (

@@ -295,7 +295,7 @@ class Sched:
 
         self.DefLines = []
         for i in range(self.nRows):
-            DefLine = "{} | {:6} | {:.2f} | {:%Y-%m-%d %H:%M} | {:%Y-%m-%d %H:%M}".format(
+            DefLine = "| {:10} | {:7} | {:.3f} | {:%Y-%m-%d %H:%M %Z} | {:%Y-%m-%d %H:%M %Z} |".format(
                 self.Table["ProjID"][i],
                 self.Table["SessID"][i],
                 self.Table["StartMJD"][i],
@@ -389,6 +389,10 @@ class Sched:
 
         if LineType == "default":
             self.GetDefLines()
+            print("| Project    | Session | Start MJD "
+                  "| Start time           | End time             |")
+            print("| ---------- | ------- | --------- "
+                  "| -------------------- | -------------------- |")
         elif LineType == "wiki":
             self.GetWikiLines()
         elif LineType == "gbncc":

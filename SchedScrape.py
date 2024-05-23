@@ -285,7 +285,7 @@ class Sched:
         self.WikiLines = np.array(self.WikiLines)
         self.Table["OutText"] = self.WikiLines
 
-    def GetDefLines(self):
+    def GetDefLines(self, utc=False):
         """Default; for example:
         P2945 | 1713 | 59050.05 | 2020-07-19 21:15:00-04:00 | 2020-07-19 22:15:00-04:00
         P2945 | 2043 | 59052.21 | 2020-07-22 01:00:00-04:00 | 2020-07-22 02:00:00-04:00
@@ -295,12 +295,17 @@ class Sched:
 
         self.DefLines = []
         for i in range(self.nRows):
+            start = self.Table["StartLoc"][i]
+            end = self.Table["EndLoc"][i]
+            if utc:
+                start = start.astimezone(pytz.UTC)
+                end = end.astimezone(pytz.UTC)
             DefLine = "| {:10} | {:7} | {:.3f} | {:%Y-%m-%d %H:%M %Z} | {:%Y-%m-%d %H:%M %Z} |".format(
                 self.Table["ProjID"][i],
                 self.Table["SessID"][i],
                 self.Table["StartMJD"][i],
-                self.Table["StartLoc"][i],
-                self.Table["EndLoc"][i],
+                start,
+                end,
             )
             self.DefLines.append(DefLine)
 
@@ -387,8 +392,8 @@ class Sched:
             2020 Aug 23: 23:15 (4.00h) -- ?? 
         """
 
-        if LineType == "default":
-            self.GetDefLines()
+        if LineType in ["default", "utc"]:
+            self.GetDefLines(utc=(LineType == "utc"))
             print("| Project    | Session | Start MJD "
                   "| Start time           | End time             |")
             print("| ---------- | ------- | --------- "
@@ -711,7 +716,7 @@ def main():
     parser.add_argument(
         "--printformat",
         "-pf",
-        choices=["wiki", "none", "gbncc", "gbtops", "default"],
+        choices=["wiki", "none", "gbncc", "gbtops", "default", "utc"],
         nargs="?",
         default="default",
         help="Format of schedule info printed.",

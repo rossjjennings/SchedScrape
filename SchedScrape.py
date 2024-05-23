@@ -435,7 +435,7 @@ def TestNANOGravGBO(ProjID):
     """
     NANOGravProjIDs = np.array(
         ["GBT18B-226", "GBT20A-998", "GBT20B-307", "GBT20B-997", "GBT21A-997",
-         "GBT21A-399", "GBT21B-996"]
+         "GBT21A-399", "GBT21B-996", "GBT21B-285"]
     )
 
     return np.any(ProjID in NANOGravProjIDs)

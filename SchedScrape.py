@@ -295,7 +295,7 @@ class Sched:
 
         self.DefLines = []
         for i in range(self.nRows):
-            DefLine = "%s | %s | %.2f | %s | %s" % (
+            DefLine = "{} | {:6} | {:.2f} | {:%Y-%m-%d %H:%M} | {:%Y-%m-%d %H:%M}".format(
                 self.Table["ProjID"][i],
                 self.Table["SessID"][i],
                 self.Table["StartMJD"][i],

@@ -664,8 +664,8 @@ def CheckShortcuts(ProjList):
     NGAO = current NANOGrav Arecibo Observatory codes
     """
     if ProjList == ["NGGB"]:
-        ProjList = ["GBT20B-307", "GBT21A-997", "GBT21B-996", "GBT21A-399"]
-        print("Using shortcut: NGGB -> GBT20B-307,GBT20B-997,GBT21B-996,GBT21A-399")
+        ProjList = ["GBT21B-996", "GBT21B-285"]
+        print("Using shortcut: NGGB -> GBT21B-996,GBT21B-285")
     elif ProjList == ["NGAO"]:
         ProjList = ["P2780", "P2945"]
         print("Using shortcut: NGAO -> P2780,P2945")

@@ -444,7 +444,7 @@ def TestNANOGravGBO(ProjID):
     """
     NANOGravProjIDs = np.array(
         ["GBT18B-226", "GBT20A-998", "GBT20B-307", "GBT20B-997", "GBT21A-997",
-         "GBT21A-399", "GBT21B-996", "GBT21B-285"]
+         "GBT21A-399", "GBT21B-996", "GBT21B-285", "GBT24B-998", "GBT24B-427"]
     )
 
     return np.any(ProjID in NANOGravProjIDs)
@@ -673,8 +673,8 @@ def CheckShortcuts(ProjList):
     NGAO = current NANOGrav Arecibo Observatory codes
     """
     if ProjList == ["NGGB"]:
-        ProjList = ["GBT21B-996", "GBT21B-285"]
-        print("Using shortcut: NGGB -> GBT21B-996,GBT21B-285")
+        ProjList = ["GBT24B-998", "GBT24B-427"]
+        print("Using shortcut: NGGB -> GBT24B-998,GBT24B-427")
     elif ProjList == ["NGAO"]:
         ProjList = ["P2780", "P2945"]
         print("Using shortcut: NGAO -> P2780,P2945")
